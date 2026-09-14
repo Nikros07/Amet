@@ -1,0 +1,560 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-dark: #0b0908;
+    --bg-darker: #050403;
+    --bg-card: #14100d;
+    --bg-input: #1c1713;
+    --text-primary: #ece3d2;
+    --text-secondary: #a89a83;
+    --gold: #d4af37;
+    --gold-bright: #f4d675;
+    --blood: #8b0000;
+    --blood-bright: #c81e1e;
+    --green: #3bb54a;
+    --border-color: #3a2f22;
+    --shadow-glow: 0 0 18px rgba(212, 175, 55, 0.25);
+    --shadow-blood: 0 0 18px rgba(200, 30, 30, 0.35);
+    --border-radius: 4px;
+    --transition: 0.2s ease;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: radial-gradient(ellipse at top, #171310 0%, var(--bg-dark) 55%, var(--bg-darker) 100%);
+    color: var(--text-primary);
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    color: var(--gold);
+    letter-spacing: 0.5px;
+}
+
+#app {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.15), 0 20px 60px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    padding-bottom: 20px;
+}
+
+h1 {
+    text-align: center;
+    padding: 28px 0 6px;
+    margin: 0;
+    font-size: 3em;
+    font-weight: 900;
+    background: linear-gradient(180deg, #1a1512, var(--bg-card));
+    border-bottom: 2px solid var(--gold);
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+}
+
+.tagline {
+    text-align: center;
+    margin: 0;
+    padding-bottom: 20px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-style: italic;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 0.8em;
+}
+
+h2 {
+    margin: 20px;
+    font-size: 1.5em;
+    border-left: 3px solid var(--blood-bright);
+    padding-left: 10px;
+}
+
+.controls, .form-actions, .settings-form, .projection-controls {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    align-items: end;
+    margin: 20px;
+}
+
+.controls button,
+.form-actions button,
+.settings-form button,
+.projection-controls button,
+#calculateProjection,
+#generateTipsBtn,
+.addBtn {
+    background: linear-gradient(180deg, var(--bg-input), var(--bg-darker));
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 10px 18px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 600;
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.controls button:hover,
+.form-actions button:hover,
+.settings-form button:hover,
+.projection-controls button:hover,
+#calculateProjection:hover,
+#generateTipsBtn:hover,
+.addBtn:hover {
+    background: var(--gold);
+    color: #14100d;
+    box-shadow: var(--shadow-glow);
+}
+
+.form-actions .cancelBtn {
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+.form-actions .cancelBtn:hover {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    box-shadow: none;
+}
+
+.controls button:active,
+.form-actions button:active {
+    transform: scale(0.98);
+}
+
+.form-group {
+    margin: 0 20px 15px;
+    min-width: 200px;
+}
+
+#formContainer .form-group,
+.settings-form .form-group {
+    margin: 0 0 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--gold);
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-size: 1em;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    background: var(--bg-card);
+}
+
+#formContainer, #transactionsContainer, #taxReportContainer, #aiTipsContainer {
+    margin: 20px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+}
+
+#transactionsContainer, #taxReportContainer {
+    margin-top: 0;
+}
+
+.transaction-table, .tax-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 0;
+    background: var(--bg-card);
+}
+
+.transaction-table th, .tax-report-table th,
+.transaction-table td, .tax-report-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.transaction-table th, .tax-report-table th {
+    background: var(--bg-darker);
+    color: var(--gold);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.transaction-table tbody tr {
+    transition: var(--transition);
+}
+
+.transaction-table tbody tr:hover {
+    background: var(--bg-input);
+}
+
+.transaction-type-income {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.transaction-type-expense {
+    color: var(--blood-bright);
+    font-weight: 600;
+}
+
+.transaction-date {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+#summaryContainer {
+    display: flex;
+    gap: 20px;
+    margin: 20px;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    flex: 1;
+    min-width: 150px;
+    background: linear-gradient(160deg, var(--bg-input), var(--bg-card));
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-glow);
+}
+
+.summary-card h3 {
+    margin: 0 0 10px 0;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Inter', sans-serif;
+}
+
+.summary-card .value {
+    font-size: 2.2em;
+    font-weight: 700;
+    margin: 10px 0;
+    display: block;
+    font-family: 'Playfair Display', serif;
+}
+
+.summary-card.income .value {
+    color: var(--green);
+}
+
+.summary-card.expense .value {
+    color: var(--blood-bright);
+    text-shadow: 0 0 12px rgba(200, 30, 30, 0.4);
+}
+
+.summary-card.net .value {
+    color: var(--gold);
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+
+#reportsContainer {
+    display: flex;
+    gap: 20px;
+    margin: 0 20px 20px;
+    flex-wrap: wrap;
+}
+
+#reportsContainer > div {
+    flex: 1;
+    min-width: 250px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+#reportsContainer > div:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Fixed-height chart wrapper — Chart.js with maintainAspectRatio:false needs a
+   parent with an explicit height, otherwise it grows unbounded on re-render. */
+.chart-wrap {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
+
+.chart-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#projectionContainer {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin: 20px;
+}
+
+.projection-controls {
+    margin: 0 0 15px;
+}
+
+.projection-controls .form-group {
+    flex: 1;
+    min-width: 150px;
+    margin: 0;
+}
+
+#categoryReducers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.category-reducer {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    flex: 1;
+    min-width: 180px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.category-reducer:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.category-reducer label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--gold);
+    font-weight: 600;
+}
+
+.category-reducer input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: var(--border-radius);
+}
+
+.category-reducer small {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
+#projectionResult {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#projectionResult h3 {
+    margin-top: 0;
+    color: var(--gold);
+}
+
+#projectionResult p {
+    margin: 10px 0;
+    font-size: 1.1em;
+}
+
+#projectionResult strong {
+    color: var(--gold-bright);
+}
+
+#aiTipsContainer h2 {
+    margin: 0 0 15px;
+    border: none;
+    padding: 0;
+}
+
+#aiTipsList {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#aiTipsList li {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--border-radius);
+    padding: 12px 15px;
+}
+
+.ai-disclaimer {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    font-style: italic;
+    margin: 0;
+}
+
+#settingsContainer {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin: 20px;
+}
+
+.settings-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin: 0;
+    align-items: start;
+}
+
+#categoryManager {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-top: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+#categoryManager h4 {
+    margin: 0 0 15px 0;
+    color: var(--gold);
+    font-size: 1.1em;
+}
+
+.category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.category-tag {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
+
+.category-tag:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+}
+
+.category-tag button {
+    background: transparent;
+    border: none;
+    color: var(--blood-bright);
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.9em;
+    line-height: 1;
+}
+
+#categoryManager input {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+#categoryManager .addBtn {
+    width: 100%;
+}
+
+.storage-note {
+    margin: 20px;
+    padding: 10px 15px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--green);
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    body { padding: 10px; }
+    #app { margin: 0; border-radius: 0; }
+    h1 { font-size: 2em; padding: 20px 0 6px; }
+    .controls, .form-actions, .settings-form, .projection-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .form-group { min-width: 100%; }
+    #reportsContainer { flex-direction: column; }
+}

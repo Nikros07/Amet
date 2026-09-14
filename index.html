@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amet — Buchhalter-Assistent</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>AMET</h1>
+        <p class="tagline">La Cassa — Dein Buchhalter mit Stil</p>
+
+        <div class="controls">
+            <button id="importBtn">Daten importieren</button>
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+            <button id="exportBtn">Daten exportieren (Backup)</button>
+        </div>
+        <p class="storage-note">💾 Deine Daten werden automatisch lokal in diesem Browser gespeichert (localStorage). Exportiere trotzdem regelmäßig ein Backup, falls du den Browser wechselst oder Speicher löschst.</p>
+
+        <div id="summaryContainer"></div>
+
+        <div id="reportsContainer">
+            <div id="expensePieChartContainer">
+                <h3>Ausgaben nach Kategorie</h3>
+                <div class="chart-wrap"><canvas id="expensePieChart"></canvas></div>
+            </div>
+            <div id="incomeBarChartContainer">
+                <h3>Einnahmen nach Kategorie</h3>
+                <div class="chart-wrap"><canvas id="incomeBarChart"></canvas></div>
+            </div>
+            <div id="paymentMethodChartContainer">
+                <h3>Ausgaben nach Zahlungsart</h3>
+                <div class="chart-wrap"><canvas id="paymentMethodChart"></canvas></div>
+            </div>
+        </div>
+
+        <div id="aiTipsContainer">
+            <h2>KI-Tipps</h2>
+            <p class="ai-disclaimer">Aktuell eine lokale Regel-Analyse deiner Daten (kein externes KI-Modell verbunden — dafür bräuchte es ein Backend mit API-Key, siehe README).</p>
+            <button id="generateTipsBtn" class="addBtn">Tipps generieren</button>
+            <ul id="aiTipsList"></ul>
+        </div>
+
+        <div id="formContainer"></div>
+
+        <h2>Transaktionen</h2>
+        <div id="transactionsContainer">
+            <p>Keine Transaktionen vorhanden. Füge eine hinzu!</p>
+        </div>
+
+        <div id="taxReportContainer">
+            <h2>Steuerbericht (SI)</h2>
+            <div id="taxReportContent"></div>
+        </div>
+
+        <div id="projectionContainer">
+            <h2>Asset-Projektion</h2>
+            <div class="projection-controls">
+                <div class="form-group">
+                    <label for="projectionMonths">Monatshorizont*</label>
+                    <input type="number" id="projectionMonths" value="6" min="1" max="24">
+                </div>
+                <div class="form-group">
+                    <label for="savageRate">Monatliche Sparrate (aktuell)*</label>
+                    <input type="number" id="savageRate" step="0.01" min="0">
+                    <small>Berechnet als Einnahmen - Ausgaben</small>
+                </div>
+            </div>
+            <div id="categoryReducers"></div>
+            <button id="calculateProjection" class="addBtn">Projektion berechnen</button>
+            <div id="projectionResult"></div>
+        </div>
+
+        <div id="settingsContainer"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
