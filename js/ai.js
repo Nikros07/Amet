@@ -6,7 +6,7 @@
 import { supabase } from './supabase-client.js';
 import { state, findCategory } from './state.js';
 import { getTotalWealth, getDirectlyAvailableStatus, getAllWalletBalances } from './wallets.js';
-import { showToast } from './toast.js';
+import { formatCurrency } from './format.js';
 
 const QUICK_ACTIONS = [
     'Wie steh ich?',
@@ -71,6 +71,41 @@ export async function askAI(question) {
     return data.answer;
 }
 
+// Fällt zurück, wenn die Edge Function (noch) nicht deployed oder erreichbar
+// ist (siehe Spec: "Wenn alle AI-Modelle nicht erreichbar sind: eine
+// einfache lokale/rule-based Antwort verwenden"). Erkennt nur ein paar
+// simple Muster — kein Ersatz für die echte KI, aber besser als nichts.
+function localFallbackAnswer(question) {
+    const cur = state.settings.currency;
+    const s = computeFinancialSummary();
+    const q = question.toLowerCase();
+
+    const spendMatch = q.match(/(\d+(?:[.,]\d+)?)\s*€?.*(ausgeben|leisten|kaufen)/);
+    if (spendMatch) {
+        const amount = parseFloat(spendMatch[1].replace(',', '.'));
+        const remaining = s.directlyAvailable.value - amount;
+        const min = state.settings.direct_available_min;
+        if (remaining >= min) {
+            return `Ja, das sollte gehen — danach blieben dir ${formatCurrency(remaining, cur)} direkt verfügbar. (Lokale Schätzung, keine KI verbunden.)`;
+        }
+        return `Eher knapp — direkt verfügbar sind aktuell ${formatCurrency(s.directlyAvailable.value, cur)}, danach blieben nur ${formatCurrency(remaining, cur)} (Zielbereich ab ${formatCurrency(min, cur)}). (Lokale Schätzung, keine KI verbunden.)`;
+    }
+
+    if (/(wie steh|wie läuft|money|status)/.test(q)) {
+        return `Gesamtvermögen ${formatCurrency(s.totalWealth, cur)}, direkt verfügbar ${formatCurrency(s.directlyAvailable.value, cur)} (${s.directlyAvailable.label}). (Lokale Schätzung, keine KI verbunden.)`;
+    }
+
+    if (/(wo.*geld|ausgegeben|kategorien)/.test(q)) {
+        if (s.topExpenseCategoriesThisMonth.length === 0) {
+            return 'Noch keine Ausgaben diesen Monat erfasst. (Lokale Schätzung, keine KI verbunden.)';
+        }
+        const top = s.topExpenseCategoriesThisMonth.map(c => `${c.name} (${formatCurrency(c.amount, cur)})`).join(', ');
+        return `Diesen Monat bisher am meisten: ${top}. (Lokale Schätzung, keine KI verbunden.)`;
+    }
+
+    return `KI-Backend nicht erreichbar. Aktuell: ${formatCurrency(s.totalWealth, cur)} Gesamtvermögen, ${formatCurrency(s.directlyAvailable.value, cur)} direkt verfügbar.`;
+}
+
 export function renderAiPanel() {
     const container = document.getElementById('aiContainer');
     if (!container) return;
@@ -100,7 +135,8 @@ export function renderAiPanel() {
             const answer = await askAI(question);
             history.push({ role: 'assistant', text: answer });
         } catch (err) {
-            history.push({ role: 'error', text: `KI nicht erreichbar: ${err.message || err}` });
+            console.warn('AI-Backend nicht erreichbar, nutze lokalen Fallback:', err);
+            history.push({ role: 'assistant', text: localFallbackAnswer(question) });
         }
         renderHistory();
     };
