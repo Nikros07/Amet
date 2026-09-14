@@ -119,7 +119,7 @@ export function renderTransactionForm() {
                 <label for="amount">Betrag* (${state.settings.currency})</label>
                 <input type="number" id="amount" data-field="amount" step="0.01" min="0" value="${raw.amount || ''}">
             </div>
-            <div id="workHoursFields" ${raw.type === 'income' ? '' : 'hidden'} style="display:flex; gap:10px;">
+            <div id="workHoursFields" class="work-hours-fields" ${raw.type === 'income' ? '' : 'hidden'}>
                 <div class="form-group" style="margin-right:0;">
                     <label for="workHours">Stunden (optional)</label>
                     <input type="number" id="workHours" step="0.25" min="0" value="${raw.work_hours || ''}" placeholder="z.B. 4">

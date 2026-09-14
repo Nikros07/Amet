@@ -49,6 +49,15 @@ h1, h2, h3, h4 {
     justify-content: center;
 }
 
+/* Der HTML-hidden-Attribut-Default ([hidden]{display:none}) hat dieselbe
+   Spezifität wie die Klassenregel oben — ohne diese Regel gewinnt je nach
+   Cascade-Reihenfolge manchmal die Klasse, und der Login-Screen bleibt
+   sichtbar, obwohl JS ihn per .hidden=true ausblenden wollte. Das war der
+   eigentliche Grund für den "Login klappt, aber nichts passiert"-Bug. */
+.login-screen[hidden] {
+    display: none;
+}
+
 .login-box {
     width: 100%;
     max-width: 380px;
@@ -662,6 +671,9 @@ h2 {
 
 .view-section { display: block; }
 .view-section[hidden] { display: none; }
+
+.work-hours-fields { display: flex; gap: 10px; }
+.work-hours-fields[hidden] { display: none; }
 
 /* ---------- AI Panel ---------- */
 
