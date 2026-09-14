@@ -1,51 +1,84 @@
-# Amet — Buchhalter-Assistent
+# Amet — Private Finance
 
-Dein persönlicher Finanzassistent im Stil von Stark Industries/JARVIS – mit Einnahmen-/Ausgaben-Tracking, Kategorien-Reports und Vermögensprojektion.
+Privates Finance Command Center: trackt drei reale Geldbereiche (Konto, Bargeld in der Handyhülle, Reserve beim Bruder), rechnet daraus dein Gesamtvermögen und dein "direkt verfügbares" Geld gegen einen konfigurierbaren Zielbereich (Standard 100–150 €).
 
-## Features
+Kein Bank-Zugriff, kein Open Banking, keine automatische Synchronisierung — alle Transaktionen werden manuell erfasst.
 
-- 💰 **Einnahmen/Ausgaben-Tracking**: Transaktionen erfassen, bearbeiten, löschen
-- 🏷️ **Kategorien**: Vorgefertigte Kategorien (u.a. Tabak, Alkohol, Ausrüstung) sowie eigene Kategorien
-- 📊 **Reports**: Kreis- und Balkendiagramm zur Ausgaben-/Einnahmenverteilung (Chart.js)
-- 🧾 **Steuerbericht**: Ausgaben nach Kategorie gruppiert, als Basis für mögliche Abzüge
-- 📈 **Asset-Projektion**: Rechnet hoch, was eine prozentuale Reduktion einzelner Ausgabenkategorien über X Monate an zusätzlicher Ersparnis bringt
-- ⚙️ **Einstellungen**: Steuer-ID (SI), Währung, eigene Kategorien verwalten
-- 💾 **Import/Export**: Daten als JSON-Datei sichern und wieder laden — kein Backend, alles bleibt lokal
+> **Status**: Phase A (Datenmodell, Persistenz, Schnelleingabe). KI-Assistent, Redesign, Charts/Ziele/Budgets/Forecast folgen in weiteren Phasen — Details in `.hermes`-artiger Form im Plan dieser Session.
 
-## Schnellstart
+## Setup
 
-1. `index.html` im Browser öffnen (Doppelklick genügt, oder via GitHub Pages hosten)
-2. Optional: vorhandene `amet-buchhalter-data.json` importieren
-3. Transaktion hinzufügen: Typ, Beschreibung, Betrag, Datum, Kategorie wählen
-4. Reports und Steuerbericht aktualisieren sich automatisch
-5. Unter "Asset-Projektion": Monatshorizont + aktuelle Sparrate eintragen, pro Kategorie eine Reduktion in % angeben, "Projektion berechnen" klicken
-6. Vor dem Schließen: "Daten exportieren", um nichts zu verlieren
+### 1. Supabase-Projekt
 
-## Datenformat
+1. Projekt auf [supabase.com](https://supabase.com) anlegen (kostenlos).
+2. Im SQL-Editor den kompletten Inhalt von [`supabase/schema.sql`](supabase/schema.sql) ausführen — legt Tabellen, Constraints und Row-Level-Security an.
+3. Unter **Authentication → Providers** sicherstellen, dass "Email" aktiv ist, **Signups aber nicht öffentlich** sind (die App hat bewusst keinen Registrieren-Button).
+4. Unter **Authentication → Users → Add user** deinen einen Account anlegen (E-Mail + Passwort, "Auto Confirm User" aktivieren).
+5. Unter **Project Settings → API** die **Project URL** und den **anon public key** kopieren.
 
-```json
-{
-  "settings": { "taxId": "DE123456789", "currency": "EUR" },
-  "categories": {
-    "income": ["Gehalt", "Freelance", "Geschenke", "Sonstige"],
-    "expense": ["Lebensmittel", "Miete", "Transport", "Freizeit", "Tabak", "Alkohol", "Ausrüstung", "Abonnements", "Sonstige"]
-  },
-  "transactions": [
-    { "id": "...", "type": "expense", "description": "Zigaretten", "amount": 8.5, "date": "2026-09-14", "category": "Tabak" }
-  ]
-}
+### 2. Client konfigurieren
+
+In [`js/config.js`](js/config.js) die beiden Platzhalter durch deine echten Werte ersetzen:
+
+```js
+export const SUPABASE_URL = 'https://dein-projekt.supabase.co';
+export const SUPABASE_ANON_KEY = 'dein-anon-key';
 ```
+
+Der anon key ist laut Supabase-Design öffentlich (der eigentliche Schutz kommt aus Row-Level-Security) — er darf im Repo/Client stehen.
+
+### 3. Lokal starten
+
+Kein Build-Schritt nötig (Vanilla ES-Module). Über einen einfachen HTTP-Server servieren, z.B.:
+
+```bash
+python -m http.server 8420
+```
+
+`ES Modules` funktionieren nicht über `file://` — immer über `http://localhost:...` öffnen.
+
+## Wie dein Geld modelliert wird
+
+Drei Wallets, jede ein eigenes Konto im Ledger-Sinn:
+
+- **Konto** (`account`) — normales Bankguthaben
+- **Handyhülle** (`phone_cash`) — Bargeld-Notgroschen, normalerweise 50 €
+- **Bruder** (`brother`) — Reserve, die dein Bruder für dich hält
+
+Jede Transaktion ist genau einer von drei Typen:
+
+- **Einnahme** — erhöht ein Wallet, zählt zum Vermögenszuwachs
+- **Ausgabe** — verringert ein Wallet, zählt zum Vermögensrückgang
+- **Transfer** — verschiebt Geld zwischen deinen eigenen Wallets, ändert dein **Gesamtvermögen nicht** (Konto sinkt, Bruder steigt exakt um denselben Betrag)
+
+Wallet-Salden werden nie gespeichert, sondern immer live aus der kompletten Transaktionshistorie berechnet (`js/wallets.js`) — kein Risiko von Drift zwischen "Anzeige" und "Fakten".
+
+**Direkt verfügbar** = Konto + Handyhülle. Der Zielbereich (Standard 100–150 €) ist in den Einstellungen änderbar.
+
+## Schnelleingabe
+
+Statt eines vollen Formulars kannst du oben im Dashboard kurze Ausdrücke eintippen:
+
+- `+80 Arbeit` → Einnahme, 80 €, Kategorie "Arbeit"
+- `-12 Essen` → Ausgabe, 12 €, Kategorie "Essen"
+- `+300 Arbeit Metzgerei` → Einnahme, 300 €, Kategorie "Arbeit", Notiz "Metzgerei"
+- `50 Konto zu Bruder` → Transfer, 50 €, Konto → Bruder
+
+Das Ergebnis wird **nicht sofort gespeichert** — es füllt das normale Formular vor, du prüfst/korrigierst und bestätigst explizit.
 
 ## Technik
 
-- HTML5, CSS3 (CSS-Variablen), Vanilla JavaScript (ES6+)
-- Chart.js via CDN
-- Kein Backend — läuft komplett im Browser, Daten verlassen nie den eigenen Rechner
-- Hostbar direkt über GitHub Pages (Settings → Pages → Branch `main` / root)
+- HTML5, CSS3, Vanilla JavaScript (ES-Module, kein Build-Schritt)
+- [Supabase](https://supabase.com) (Postgres + Auth) als Datenbank — Zugriff ausschließlich über Row-Level-Security, kein eigenes Backend nötig
+- Chart.js via CDN für die Kategorie-Diagramme
+- Hostbar über GitHub Pages (Settings → Pages → Branch `main` / root); Supabase läuft unabhängig davon
 
-## Wichtiger Hinweis
+## Sicherheit
 
-Dieses Tool dient der persönlichen Finanzübersicht und Motivation. Steuerbericht und Asset-Projektion sind vereinfachte Berechnungen (linear, ohne Zinseszins) und ersetzen keine professionelle Steuer- oder Finanzberatung.
+- Keine Bank-API, kein Open Banking, keine automatischen Finanztransaktionen — die App verwaltet ausschließlich manuell eingetragene Daten.
+- Zugriff nur nach Login (Supabase Auth), Daten pro Nutzer durch Row-Level-Security isoliert.
+- Der Supabase **anon key** ist bewusst öffentlich (Standard-Pattern) — er gewährt ohne gültige Session keinen Zugriff auf fremde Zeilen.
+- Ein künftiger KI-Assistent (OpenRouter) läuft serverseitig über eine Supabase Edge Function; der API-Key landet nie im Client.
 
 ## Lizenz
 

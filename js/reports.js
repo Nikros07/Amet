@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, findCategory } from './state.js';
 import { formatCurrency } from './format.js';
 
 export function renderSummary() {
@@ -33,8 +33,8 @@ export function renderTaxReport() {
     const expensesByCategory = state.transactions
         .filter(t => t.type === 'expense')
         .reduce((acc, t) => {
-            const cat = t.category || 'Sonstige';
-            acc[cat] = (acc[cat] || 0) + t.amount;
+            const name = findCategory(t.category_id)?.name || 'Sonstiges';
+            acc[name] = (acc[name] || 0) + t.amount;
             return acc;
         }, {});
 
@@ -45,13 +45,12 @@ export function renderTaxReport() {
         table += `<tr><td>${category}</td><td>${formatCurrency(amount, cur)}</td></tr>`;
         totalDeductible += amount;
     }
-    table += `<tr><td><strong>Gesamt abzugsfähig</strong></td><td><strong>${formatCurrency(totalDeductible, cur)}</strong></td></tr>`;
+    table += `<tr><td><strong>Gesamt</strong></td><td><strong>${formatCurrency(totalDeductible, cur)}</strong></td></tr>`;
     table += '</tbody></table>';
 
     document.getElementById('taxReportContent').innerHTML = rows.length === 0
-        ? '<p class="empty-hint">Noch keine Ausgaben erfasst — der Steuerbericht füllt sich, sobald du welche einträgst.</p>'
+        ? '<p class="empty-hint">Noch keine Ausgaben erfasst — der Bericht füllt sich, sobald du welche einträgst.</p>'
         : `
-        <p>Basierend auf deinen Ausgaben hier ist eine Übersicht möglicher abzugsfähiger Beträge gemäß deiner Steuer-ID (SI): <strong>${state.settings.taxId || 'nicht gesetzt'}</strong>.</p>
         ${table}
         <p><em>Hinweis: Dies ist keine Steuerberatung. Konsultiere einen Steuerberater für verbindliche Auskünfte.</em></p>
     `;

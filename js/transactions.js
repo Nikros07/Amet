@@ -1,9 +1,11 @@
-import { state, generateId, PAYMENT_METHODS } from './state.js';
+import { state, findWallet, findCategory, WALLET_LABELS } from './state.js';
+import { insertTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction } from './db.js';
 import { formatCurrency, formatDate } from './format.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
 
 let editingTransactionId = null;
+let prefill = null; // Vorschlag aus der Schnelleingabe, einmalig beim nächsten Render verwendet
 let onChange = () => {};
 let listFilters = { search: '', type: 'all' };
 
@@ -11,16 +13,68 @@ export function setOnChange(fn) {
     onChange = fn;
 }
 
-function validateTransaction({ description, amount, date }) {
+export function prefillForm(suggestion) {
+    editingTransactionId = null;
+    prefill = suggestion;
+    onChange();
+}
+
+function walletOptions(selectedId) {
+    return state.wallets
+        .map(w => `<option value="${w.id}" ${w.id === selectedId ? 'selected' : ''}>${w.name}</option>`)
+        .join('');
+}
+
+function categoryOptions(type, selectedId) {
+    return state.categories[type]
+        .map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.name}</option>`)
+        .join('');
+}
+
+function blankTransaction() {
+    const accountWallet = state.wallets.find(w => w.key === 'account');
+    return {
+        type: 'income',
+        amount: '',
+        date: new Date().toISOString().split('T')[0],
+        wallet_id: accountWallet ? accountWallet.id : '',
+        to_wallet_id: '',
+        category_id: state.categories.income[0]?.id || '',
+        note: ''
+    };
+}
+
+function applyPrefill(base) {
+    if (!prefill) return base;
+    const t = { ...base };
+    if (prefill.type === 'transfer') {
+        t.type = 'transfer';
+        const from = state.wallets.find(w => w.key === prefill.fromWalletKey);
+        const to = state.wallets.find(w => w.key === prefill.toWalletKey);
+        t.amount = prefill.amount;
+        t.wallet_id = from ? from.id : t.wallet_id;
+        t.to_wallet_id = to ? to.id : '';
+    } else {
+        t.type = prefill.type;
+        t.amount = prefill.amount;
+        t.category_id = prefill.categoryId || state.categories[prefill.type][0]?.id || '';
+        t.note = prefill.note || '';
+        t._categoryGuess = !prefill.categoryId ? prefill.categoryGuess : null;
+    }
+    return t;
+}
+
+function validateTransaction(t) {
     const errors = {};
-    if (!description || description.trim().length < 2) {
-        errors.description = 'Mindestens 2 Zeichen.';
-    }
-    if (isNaN(amount) || amount <= 0) {
-        errors.amount = 'Muss größer als 0 sein.';
-    }
-    if (!date) {
-        errors.date = 'Bitte ein Datum wählen.';
+    if (isNaN(t.amount) || t.amount <= 0) errors.amount = 'Muss größer als 0 sein.';
+    if (!t.date) errors.date = 'Bitte ein Datum wählen.';
+    if (t.type === 'transfer') {
+        if (!t.wallet_id) errors.fromWallet = 'Von-Wallet fehlt.';
+        if (!t.to_wallet_id) errors.toWallet = 'Nach-Wallet fehlt.';
+        if (t.wallet_id && t.wallet_id === t.to_wallet_id) errors.toWallet = 'Von und nach müssen unterschiedlich sein.';
+    } else {
+        if (!t.wallet_id) errors.wallet = 'Wallet fehlt.';
+        if (!t.category_id) errors.category = 'Kategorie fehlt.';
     }
     return errors;
 }
@@ -29,7 +83,7 @@ function applyFieldErrors(form, errors) {
     form.querySelectorAll('.field-error').forEach(el => el.remove());
     form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
     Object.entries(errors).forEach(([field, message]) => {
-        const input = form.querySelector(`#${field}`);
+        const input = form.querySelector(`[data-field="${field}"]`);
         if (!input) return;
         input.classList.add('input-error');
         const msg = document.createElement('small');
@@ -42,52 +96,57 @@ function applyFieldErrors(form, errors) {
 export function renderTransactionForm() {
     const container = document.getElementById('formContainer');
     const isEditing = editingTransactionId !== null;
-    const transaction = isEditing
-        ? state.transactions.find(t => t.id === editingTransactionId)
-        : { type: 'income', description: '', amount: '', date: new Date().toISOString().split('T')[0], category: '', paymentMethod: 'Bar' };
+    const raw = isEditing ? state.transactions.find(t => t.id === editingTransactionId) : applyPrefill(blankTransaction());
+    if (!raw) { editingTransactionId = null; return; }
 
-    // Falls die gespeicherte Kategorie inzwischen gelöscht wurde, trotzdem
-    // anzeigen statt sie stillschweigend durch die erste Listenoption zu ersetzen.
-    let categoryPool = state.categories[transaction.type];
-    if (transaction.category && !categoryPool.includes(transaction.category)) {
-        categoryPool = [transaction.category, ...categoryPool];
-    }
-    const categoryOptions = categoryPool
-        .map(cat => `<option value="${cat}" ${transaction.category === cat ? 'selected' : ''}>${cat}</option>`)
-        .join('');
-    const paymentMethodOptions = PAYMENT_METHODS
-        .map(pm => `<option value="${pm}" ${transaction.paymentMethod === pm ? 'selected' : ''}>${pm}</option>`)
-        .join('');
+    const isTransfer = raw.type === 'transfer';
+    const categoryHint = raw._categoryGuess
+        ? `<small class="field-hint">Kategorie "${raw._categoryGuess}" nicht gefunden — bitte auswählen.</small>`
+        : '';
 
     container.innerHTML = `
         <h2>${isEditing ? 'Transaktion bearbeiten' : 'Transaktion hinzufügen'}</h2>
         <form id="transactionForm" novalidate>
             <div class="form-group">
                 <label for="type">Typ*</label>
-                <select id="type">
-                    <option value="income" ${transaction.type === 'income' ? 'selected' : ''}>Einnahme</option>
-                    <option value="expense" ${transaction.type === 'expense' ? 'selected' : ''}>Ausgabe</option>
+                <select id="type" data-field="type">
+                    <option value="income" ${raw.type === 'income' ? 'selected' : ''}>Einnahme</option>
+                    <option value="expense" ${raw.type === 'expense' ? 'selected' : ''}>Ausgabe</option>
+                    <option value="transfer" ${isTransfer ? 'selected' : ''}>Transfer (eigene Wallets)</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="description">Beschreibung*</label>
-                <input type="text" id="description" value="${transaction.description}">
-            </div>
-            <div class="form-group">
                 <label for="amount">Betrag* (${state.settings.currency})</label>
-                <input type="number" id="amount" step="0.01" min="0" value="${transaction.amount || ''}">
+                <input type="number" id="amount" data-field="amount" step="0.01" min="0" value="${raw.amount || ''}">
             </div>
             <div class="form-group">
                 <label for="date">Datum*</label>
-                <input type="date" id="date" value="${transaction.date}">
+                <input type="date" id="date" data-field="date" value="${raw.date}">
+            </div>
+            <div id="moveFields" ${isTransfer ? 'hidden' : ''}>
+                <div class="form-group">
+                    <label for="wallet">Wallet*</label>
+                    <select id="wallet" data-field="wallet">${walletOptions(raw.wallet_id)}</select>
+                </div>
+                <div class="form-group">
+                    <label for="category">Kategorie*</label>
+                    <select id="category" data-field="category">${categoryOptions(raw.type === 'transfer' ? 'expense' : raw.type, raw.category_id)}</select>
+                    ${categoryHint}
+                </div>
+            </div>
+            <div id="transferFields" ${isTransfer ? '' : 'hidden'}>
+                <div class="form-group">
+                    <label for="fromWallet">Von*</label>
+                    <select id="fromWallet" data-field="fromWallet">${walletOptions(raw.wallet_id)}</select>
+                </div>
+                <div class="form-group">
+                    <label for="toWallet">Nach*</label>
+                    <select id="toWallet" data-field="toWallet">${walletOptions(raw.to_wallet_id)}</select>
+                </div>
             </div>
             <div class="form-group">
-                <label for="category">Kategorie*</label>
-                <select id="category">${categoryOptions}</select>
-            </div>
-            <div class="form-group">
-                <label for="paymentMethod">Zahlungsart*</label>
-                <select id="paymentMethod">${paymentMethodOptions}</select>
+                <label for="note">Notiz</label>
+                <input type="text" id="note" value="${raw.note || ''}" placeholder="optional">
             </div>
             <div class="form-actions">
                 <button type="submit" class="addBtn">${isEditing ? 'Aktualisieren' : 'Hinzufügen'}</button>
@@ -96,43 +155,51 @@ export function renderTransactionForm() {
         </form>
     `;
 
+    prefill = null; // nur einmal anwenden
+
     const form = document.getElementById('transactionForm');
-    form.querySelector('#type').addEventListener('change', (e) => {
-        form.querySelector('#category').innerHTML = state.categories[e.target.value]
-            .map(cat => `<option value="${cat}">${cat}</option>`)
-            .join('');
+    const typeSelect = form.querySelector('#type');
+    typeSelect.addEventListener('change', () => {
+        const transfer = typeSelect.value === 'transfer';
+        form.querySelector('#moveFields').hidden = transfer;
+        form.querySelector('#transferFields').hidden = !transfer;
+        if (!transfer) {
+            form.querySelector('#category').innerHTML = categoryOptions(typeSelect.value, null);
+        }
     });
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const description = form.description.value.trim();
+        const type = form.type.value;
         const amount = parseFloat(form.amount.value);
         const date = form.date.value;
 
-        const errors = validateTransaction({ description, amount, date });
+        const candidate = type === 'transfer'
+            ? { type, amount, date, wallet_id: form.fromWallet.value, to_wallet_id: form.toWallet.value, category_id: null }
+            : { type, amount, date, wallet_id: form.wallet.value, to_wallet_id: null, category_id: form.category.value };
+
+        const errors = validateTransaction(candidate);
         applyFieldErrors(form, errors);
         if (Object.keys(errors).length > 0) return;
 
-        const transactionData = {
-            type: form.type.value,
-            description,
-            amount,
-            date,
-            category: form.category.value,
-            paymentMethod: form.paymentMethod.value
-        };
+        candidate.note = form.note.value.trim() || null;
 
-        if (isEditing) {
-            const index = state.transactions.findIndex(t => t.id === editingTransactionId);
-            state.transactions[index] = { ...transactionData, id: editingTransactionId };
+        const submitBtn = form.querySelector('.addBtn');
+        submitBtn.disabled = true;
+        try {
+            if (isEditing) {
+                await updateTransaction(editingTransactionId, candidate);
+                showToast('Transaktion aktualisiert.', { type: 'success' });
+            } else {
+                await insertTransaction(candidate);
+                showToast('Transaktion gespeichert.', { type: 'success' });
+            }
             editingTransactionId = null;
-            showToast('Transaktion aktualisiert.', { type: 'success' });
-        } else {
-            state.transactions.push({ ...transactionData, id: generateId() });
-            showToast('Transaktion hinzugefügt.', { type: 'success' });
+            onChange();
+        } catch (err) {
+            showToast(`Speichern fehlgeschlagen: ${err.message || err}`, { type: 'error', duration: 6000 });
+            submitBtn.disabled = false;
         }
-
-        onChange();
     });
 
     const cancelBtn = form.querySelector('.cancelBtn');
@@ -144,14 +211,26 @@ export function renderTransactionForm() {
     }
 }
 
+function describeTransaction(t) {
+    if (t.type === 'transfer') {
+        const from = findWallet(t.wallet_id);
+        const to = findWallet(t.to_wallet_id);
+        return `${from?.name || '?'} → ${to?.name || '?'}`;
+    }
+    const category = findCategory(t.category_id);
+    const wallet = findWallet(t.wallet_id);
+    return `${category?.name || 'Sonstiges'} · ${wallet?.name || '?'}`;
+}
+
 function matchesFilters(t) {
     const term = listFilters.search.trim().toLowerCase();
-    const matchesSearch = !term
-        || t.description.toLowerCase().includes(term)
-        || (t.category || '').toLowerCase().includes(term);
+    const haystack = `${describeTransaction(t)} ${t.note || ''}`.toLowerCase();
+    const matchesSearch = !term || haystack.includes(term);
     const matchesType = listFilters.type === 'all' || t.type === listFilters.type;
     return matchesSearch && matchesType;
 }
+
+const TYPE_LABEL = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
 
 export function renderTransactionList() {
     const container = document.getElementById('transactionsContainer');
@@ -162,21 +241,15 @@ export function renderTransactionList() {
         return;
     }
 
-    const filtered = state.transactions
-        .filter(matchesFilters)
-        .slice()
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-
+    const filtered = state.transactions.filter(matchesFilters);
     const rows = filtered.length === 0
-        ? '<tr><td colspan="7" class="empty-hint">Keine Transaktionen passen zu deiner Suche/Filter.</td></tr>'
+        ? '<tr><td colspan="6" class="empty-hint">Keine Transaktionen passen zu deiner Suche/Filter.</td></tr>'
         : filtered.map(t => `
             <tr>
                 <td class="transaction-date">${formatDate(t.date)}</td>
-                <td class="transaction-type-${t.type}">${t.type === 'income' ? 'Einnahme' : 'Ausgabe'}</td>
-                <td>${t.description}</td>
+                <td class="transaction-type-${t.type}">${TYPE_LABEL[t.type]}</td>
+                <td>${describeTransaction(t)}${t.note ? ` <span class="note-text">— ${t.note}</span>` : ''}</td>
                 <td>${formatCurrency(t.amount, cur)}</td>
-                <td>${t.category || '-'}</td>
-                <td>${t.paymentMethod || '-'}</td>
                 <td>
                     <button class="editBtn" data-id="${t.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>
                     <button class="deleteBtn" data-id="${t.id}" title="Löschen" aria-label="Löschen">🗑</button>
@@ -186,9 +259,7 @@ export function renderTransactionList() {
 
     container.innerHTML = `
         <table class="transaction-table">
-            <thead><tr>
-                <th>Datum</th><th>Typ</th><th>Beschreibung</th><th>Betrag</th><th>Kategorie</th><th>Zahlungsart</th><th>Aktionen</th>
-            </tr></thead>
+            <thead><tr><th>Datum</th><th>Typ</th><th>Details</th><th>Betrag</th><th>Aktionen</th></tr></thead>
             <tbody>${rows}</tbody>
         </table>
     `;
@@ -197,7 +268,7 @@ export function renderTransactionList() {
         btn.addEventListener('click', (e) => editTransaction(e.currentTarget.dataset.id));
     });
     container.querySelectorAll('.deleteBtn').forEach(btn => {
-        btn.addEventListener('click', (e) => deleteTransaction(e.currentTarget.dataset.id));
+        btn.addEventListener('click', (e) => deleteTransactionFlow(e.currentTarget.dataset.id));
     });
 }
 
@@ -212,14 +283,19 @@ export function setListFilters(partial) {
 
 function editTransaction(id) {
     editingTransactionId = id;
+    prefill = null;
     onChange();
     document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-async function deleteTransaction(id) {
+async function deleteTransactionFlow(id) {
     const ok = await confirmDialog('Diese Transaktion wirklich löschen? Das kann nicht rückgängig gemacht werden.');
     if (!ok) return;
-    state.transactions = state.transactions.filter(t => t.id !== id);
-    showToast('Transaktion gelöscht.', { type: 'info' });
-    onChange();
+    try {
+        await dbDeleteTransaction(id);
+        showToast('Transaktion gelöscht.', { type: 'info' });
+        onChange();
+    } catch (err) {
+        showToast(`Löschen fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+    }
 }
