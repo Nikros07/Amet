@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Amet — privates Finance Command Center. Konto, Handyhülle-Bargeld und Reserve beim Bruder im Blick, mit KI-Kurzeinschätzung.">
 <title>Amet — Private Finance</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%2314100d' stroke='%23d4af37' stroke-width='3'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='32' font-weight='bold' fill='%23d4af37' text-anchor='middle'%3E%E2%82%AC%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230a0b0d' stroke='%23c8a24d' stroke-width='3'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='32' font-weight='bold' fill='%23c8a24d' text-anchor='middle'%3E%E2%82%AC%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,43 +40,86 @@
                 <button id="logoutBtn" class="cancelBtn">Abmelden</button>
             </div>
 
-            <div id="dashboardContainer"></div>
+            <nav class="app-nav">
+                <button type="button" data-view="dashboard" class="active">Dashboard</button>
+                <button type="button" data-view="transactions">Transactions</button>
+                <button type="button" data-view="analytics">Analytics</button>
+                <button type="button" data-view="goals">Goals</button>
+                <button type="button" data-view="ai">AI</button>
+                <button type="button" data-view="settings">Settings</button>
+            </nav>
 
-            <div id="summaryContainer"></div>
+            <section class="view-section" data-view="dashboard">
+                <div id="dashboardContainer"></div>
+            </section>
 
-            <div id="reportsContainer">
-                <div id="expensePieChartContainer">
-                    <h3>Ausgaben nach Kategorie</h3>
-                    <div class="chart-wrap"><canvas id="expensePieChart"></canvas></div>
+            <section class="view-section" data-view="transactions" hidden>
+                <div id="summaryContainer"></div>
+                <div id="formContainer"></div>
+                <h2>Transaktionen</h2>
+                <div class="list-filters">
+                    <input type="search" id="transactionSearch" placeholder="Suche nach Kategorie, Wallet oder Notiz…">
+                    <select id="transactionTypeFilter">
+                        <option value="all">Alle Typen</option>
+                        <option value="income">Nur Einnahmen</option>
+                        <option value="expense">Nur Ausgaben</option>
+                        <option value="transfer">Nur Transfers</option>
+                    </select>
                 </div>
-                <div id="incomeBarChartContainer">
-                    <h3>Einnahmen nach Kategorie</h3>
-                    <div class="chart-wrap"><canvas id="incomeBarChart"></canvas></div>
+                <div id="transactionsContainer">
+                    <p class="empty-hint">Noch keine Transaktionen vorhanden. Füge eine hinzu!</p>
                 </div>
-            </div>
+            </section>
 
-            <div id="formContainer"></div>
+            <section class="view-section" data-view="analytics" hidden>
+                <h2>Vermögensentwicklung</h2>
+                <div id="netWorthChartContainer" style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;">
+                    <div class="chart-wrap"><canvas id="netWorthChart"></canvas></div>
+                </div>
 
-            <h2>Transaktionen</h2>
-            <div class="list-filters">
-                <input type="search" id="transactionSearch" placeholder="Suche nach Kategorie, Wallet oder Notiz…">
-                <select id="transactionTypeFilter">
-                    <option value="all">Alle Typen</option>
-                    <option value="income">Nur Einnahmen</option>
-                    <option value="expense">Nur Ausgaben</option>
-                    <option value="transfer">Nur Transfers</option>
-                </select>
-            </div>
-            <div id="transactionsContainer">
-                <p class="empty-hint">Noch keine Transaktionen vorhanden. Füge eine hinzu!</p>
-            </div>
+                <h2>Income vs Expenses</h2>
+                <div style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;">
+                    <div class="chart-wrap"><canvas id="incomeExpenseChart"></canvas></div>
+                </div>
 
-            <div id="taxReportContainer">
-                <h2>Ausgabenbericht</h2>
-                <div id="taxReportContent"></div>
-            </div>
+                <h2>Kategorien</h2>
+                <div id="reportsContainer">
+                    <div id="expensePieChartContainer">
+                        <h3>Ausgaben nach Kategorie</h3>
+                        <div class="chart-wrap"><canvas id="expensePieChart"></canvas></div>
+                    </div>
+                    <div id="incomeBarChartContainer">
+                        <h3>Einnahmen nach Kategorie</h3>
+                        <div class="chart-wrap"><canvas id="incomeBarChart"></canvas></div>
+                    </div>
+                </div>
 
-            <div id="settingsContainer"></div>
+                <div id="taxReportContainer">
+                    <h2>Ausgabenbericht</h2>
+                    <div id="taxReportContent"></div>
+                </div>
+
+                <h2>Forecast</h2>
+                <div id="forecastContainer" style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;"></div>
+            </section>
+
+            <section class="view-section" data-view="goals" hidden>
+                <h2>Sparziele</h2>
+                <div id="goalAddRow" class="goal-add-row"></div>
+                <div id="goalsContainer" class="goal-grid"></div>
+
+                <h2>Budgets (dieser Monat)</h2>
+                <div id="budgetAddRow" class="budget-add-row"></div>
+                <div id="budgetsContainer" class="budget-grid"></div>
+            </section>
+
+            <section class="view-section" data-view="ai" hidden>
+                <div id="aiContainer"></div>
+            </section>
+
+            <section class="view-section" data-view="settings" hidden>
+                <div id="settingsContainer"></div>
+            </section>
         </div>
     </div>
 

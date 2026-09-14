@@ -4,7 +4,7 @@ Privates Finance Command Center: trackt drei reale Geldbereiche (Konto, Bargeld 
 
 Kein Bank-Zugriff, kein Open Banking, keine automatische Synchronisierung — alle Transaktionen werden manuell erfasst.
 
-> **Status**: Phase A (Datenmodell, Persistenz, Schnelleingabe). KI-Assistent, Redesign, Charts/Ziele/Budgets/Forecast folgen in weiteren Phasen — Details in `.hermes`-artiger Form im Plan dieser Session.
+> **Status**: Phasen A–D umgesetzt (Datenmodell/Persistenz/Schnelleingabe, Redesign + Navigation, Analytics/Goals/Budgets/Forecast). KI-Assistent ist clientseitig fertig, die Supabase Edge Function muss noch einmalig deployed werden (siehe unten).
 
 ## Setup
 
@@ -66,11 +66,45 @@ Statt eines vollen Formulars kannst du oben im Dashboard kurze Ausdrücke eintip
 
 Das Ergebnis wird **nicht sofort gespeichert** — es füllt das normale Formular vor, du prüfst/korrigierst und bestätigst explizit.
 
+## Navigation
+
+Fünf Bereiche oben: **Dashboard** (Zahlen, Schnelleingabe, letzte Transaktionen), **Transactions** (Formular + Liste + Suche/Filter), **Analytics** (Vermögensverlauf, Income vs Expenses, Kategorien-Charts, Ausgabenbericht, Forecast), **Goals** (Sparziele + Budgets), **AI** (Assistent). **Settings** ist bewusst separat.
+
+## Sparziele & Budgets
+
+- **Sparziele**: Name + Zielbetrag anlegen, Fortschritt manuell per Beitrag erhöhen (kein automatisches Verknüpfen mit Transaktionen in dieser Version).
+- **Budgets**: Monatslimit pro Ausgaben-Kategorie, Fortschrittsbalken zeigt Ist-Ausgaben des laufenden Monats gegen das Limit.
+
+## KI-Assistent (AMET AI)
+
+Wichtigstes Prinzip: **Die App berechnet alle Zahlen selbst** (`js/wallets.js`, `js/analytics.js`, `js/ai.js: computeFinancialSummary()`). Die KI bekommt nur das fertige JSON-Ergebnis und formuliert daraus eine kurze, persönliche Antwort — sie rechnet nie selbst und erfindet keine Zahlen.
+
+Architektur: `Frontend → computeFinancialSummary() → Supabase Edge Function (ai-advisor) → OpenRouter (mit Modell-Fallback-Kette) → Antwort`. Der OpenRouter-Key liegt ausschließlich als Supabase-Secret auf dem Server, nie im Client.
+
+### Deployment der Edge Function (einmalig)
+
+Voraussetzung: [Supabase CLI](https://supabase.com/docs/guides/cli) installiert und eingeloggt (`supabase login`), Projekt verknüpft (`supabase link --project-ref <dein-ref>`).
+
+```bash
+supabase functions deploy ai-advisor
+supabase secrets set OPENROUTER_API_KEY=sk-or-dein-key
+```
+
+Optional, um die Modelle zu ändern (sonst greifen sinnvolle Defaults):
+
+```bash
+supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-3.5-haiku
+supabase secrets set AI_MODEL_FALLBACK=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct
+```
+
+Fällt das primäre Modell aus (Fehler, Timeout, Rate Limit, ungültige Antwort), probiert die Funktion automatisch die Fallback-Modelle der Reihe nach durch.
+
 ## Technik
 
 - HTML5, CSS3, Vanilla JavaScript (ES-Module, kein Build-Schritt)
 - [Supabase](https://supabase.com) (Postgres + Auth) als Datenbank — Zugriff ausschließlich über Row-Level-Security, kein eigenes Backend nötig
-- Chart.js via CDN für die Kategorie-Diagramme
+- Chart.js via CDN für alle Diagramme
+- Supabase Edge Function (Deno) als KI-Proxy zu OpenRouter
 - Hostbar über GitHub Pages (Settings → Pages → Branch `main` / root); Supabase läuft unabhängig davon
 
 ## Sicherheit

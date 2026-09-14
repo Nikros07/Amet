@@ -109,3 +109,54 @@ export async function updateSettings(payload) {
     state.settings = data;
     return data;
 }
+
+// ---------- Goals ----------
+
+export async function insertGoal(payload) {
+    const { data, error } = await supabase
+        .from('goals')
+        .insert({ ...payload, user_id: state.userId })
+        .select()
+        .single();
+    if (error) throw error;
+    state.goals.push(data);
+    return data;
+}
+
+export async function updateGoal(id, payload) {
+    const { data, error } = await supabase
+        .from('goals')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+    if (error) throw error;
+    const index = state.goals.findIndex(g => g.id === id);
+    if (index !== -1) state.goals[index] = data;
+    return data;
+}
+
+export async function deleteGoal(id) {
+    const { error } = await supabase.from('goals').delete().eq('id', id);
+    if (error) throw error;
+    state.goals = state.goals.filter(g => g.id !== id);
+}
+
+// ---------- Budgets ----------
+
+export async function insertBudget(payload) {
+    const { data, error } = await supabase
+        .from('budgets')
+        .insert({ ...payload, user_id: state.userId })
+        .select()
+        .single();
+    if (error) throw error;
+    state.budgets.push(data);
+    return data;
+}
+
+export async function deleteBudget(id) {
+    const { error } = await supabase.from('budgets').delete().eq('id', id);
+    if (error) throw error;
+    state.budgets = state.budgets.filter(b => b.id !== id);
+}
