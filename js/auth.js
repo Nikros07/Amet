@@ -83,13 +83,15 @@ export async function initAuth() {
             }
             debugLog(`signIn OK, session vorhanden: ${!!data.session}, user: ${data.session?.user?.email}`);
             debugLog(`localStorage sb-Key vorhanden: ${Object.keys(localStorage).some(k => k.includes('sb-'))}`);
+            document.getElementById('loginError').textContent = '';
+            submitBtn.textContent = 'Lade…';
 
-            // Voller Reload statt Live-Umschaltung: nutzt denselben Init-Pfad,
-            // der eine bestehende Session beim Laden zuverlässig erkennt. Kurze
-            // Pause davor, falls das Schreiben der Session in den Storage noch
-            // nicht ganz abgeschlossen ist, wenn signInWithPassword auflöst.
-            await new Promise((resolve) => setTimeout(resolve, 150));
-            debugLog('reloade Seite jetzt...');
+            // Erzwungener Session-Read-Through, bevor wir neu laden — stellt
+            // sicher, dass der Storage-Adapter die Session tatsächlich
+            // persistiert hat, statt uns auf ein Timing-Delay zu verlassen.
+            const readBack = await supabase.auth.getSession();
+            debugLog(`Session-Read-Through nach Login: ${!!readBack.data.session}`);
+
             window.location.reload();
         } catch (err) {
             debugLog(`EXCEPTION beim Login: ${err.message || err}`);
