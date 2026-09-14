@@ -16,6 +16,27 @@ function walletCard(key, label) {
     `;
 }
 
+function periodStats(sinceDate) {
+    const relevant = state.transactions.filter(t => new Date(t.date) >= sinceDate);
+    const income = relevant.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = relevant.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return { income, expense, net: income - expense };
+}
+
+function recapRow(label, stats, cur) {
+    const sign = stats.net >= 0 ? '+' : '';
+    return `
+        <div class="recap-row">
+            <span>${label}</span>
+            <span class="recap-figures">
+                <span class="recent-amount recent-income">+${formatCurrency(stats.income, cur)}</span>
+                <span class="recent-amount recent-expense">−${formatCurrency(stats.expense, cur)}</span>
+                <strong>${sign}${formatCurrency(stats.net, cur)}</strong>
+            </span>
+        </div>
+    `;
+}
+
 export function renderDashboard() {
     const container = document.getElementById('dashboardContainer');
     if (!container) return;
@@ -37,6 +58,12 @@ export function renderDashboard() {
             </li>
         `;
     }).join('') || '<li class="empty-hint">Noch keine Transaktionen.</li>';
+
+    const now = new Date();
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    const monthAgo = new Date(now); monthAgo.setDate(now.getDate() - 30);
+    const weekStats = periodStats(weekAgo);
+    const monthStats = periodStats(monthAgo);
 
     container.innerHTML = `
         <div class="total-wealth-block">
@@ -62,6 +89,14 @@ export function renderDashboard() {
                 <button type="button" id="quickEntrySubmit" class="addBtn">Erkennen</button>
             </div>
             <small id="quickEntryHint" class="field-hint"></small>
+        </div>
+
+        <div class="recent-transactions">
+            <h3>Recap</h3>
+            <div class="recap-list">
+                ${recapRow('Diese Woche', weekStats, cur)}
+                ${recapRow('Diesen Monat', monthStats, cur)}
+            </div>
         </div>
 
         <div class="recent-transactions">

@@ -119,6 +119,16 @@ export function renderTransactionForm() {
                 <label for="amount">Betrag* (${state.settings.currency})</label>
                 <input type="number" id="amount" data-field="amount" step="0.01" min="0" value="${raw.amount || ''}">
             </div>
+            <div id="workHoursFields" ${raw.type === 'income' ? '' : 'hidden'} style="display:flex; gap:10px;">
+                <div class="form-group" style="margin-right:0;">
+                    <label for="workHours">Stunden (optional)</label>
+                    <input type="number" id="workHours" step="0.25" min="0" value="${raw.work_hours || ''}" placeholder="z.B. 4">
+                </div>
+                <div class="form-group">
+                    <label for="workRate">€/Stunde (optional)</label>
+                    <input type="number" id="workRate" step="0.01" min="0" value="${raw.work_rate || ''}" placeholder="z.B. 16">
+                </div>
+            </div>
             <div class="form-group">
                 <label for="date">Datum*</label>
                 <input type="date" id="date" data-field="date" value="${raw.date}">
@@ -163,20 +173,37 @@ export function renderTransactionForm() {
         const transfer = typeSelect.value === 'transfer';
         form.querySelector('#moveFields').hidden = transfer;
         form.querySelector('#transferFields').hidden = !transfer;
+        form.querySelector('#workHoursFields').hidden = typeSelect.value !== 'income';
         if (!transfer) {
             form.querySelector('#category').innerHTML = categoryOptions(typeSelect.value, null);
         }
     });
+
+    const workHoursInput = form.querySelector('#workHours');
+    const workRateInput = form.querySelector('#workRate');
+    const recomputeFromHours = () => {
+        const hours = parseFloat(workHoursInput.value);
+        const rate = parseFloat(workRateInput.value);
+        if (!isNaN(hours) && !isNaN(rate) && hours > 0 && rate > 0) {
+            form.querySelector('#amount').value = (hours * rate).toFixed(2);
+        }
+    };
+    workHoursInput.addEventListener('input', recomputeFromHours);
+    workRateInput.addEventListener('input', recomputeFromHours);
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const type = form.type.value;
         const amount = parseFloat(form.amount.value);
         const date = form.date.value;
+        const workHours = type === 'income' ? parseFloat(workHoursInput.value) : NaN;
+        const workRate = type === 'income' ? parseFloat(workRateInput.value) : NaN;
 
         const candidate = type === 'transfer'
             ? { type, amount, date, wallet_id: form.fromWallet.value, to_wallet_id: form.toWallet.value, category_id: null }
             : { type, amount, date, wallet_id: form.wallet.value, to_wallet_id: null, category_id: form.category.value };
+        candidate.work_hours = !isNaN(workHours) ? workHours : null;
+        candidate.work_rate = !isNaN(workRate) ? workRate : null;
 
         const errors = validateTransaction(candidate);
         applyFieldErrors(form, errors);

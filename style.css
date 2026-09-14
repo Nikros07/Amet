@@ -522,6 +522,33 @@ h2 {
 
 .recent-item:last-child { border-bottom: none; }
 
+.recap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.recap-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.88em;
+}
+
+.recap-row:last-child { border-bottom: none; }
+
+.recap-figures {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.recap-figures strong { color: var(--text-primary); }
+
 .recent-date { color: var(--text-muted); font-size: 0.85em; }
 .recent-amount.recent-income { color: var(--green); font-weight: 600; font-variant-numeric: tabular-nums; }
 .recent-amount.recent-expense { color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -986,10 +1013,34 @@ h2 {
 /* Responsive */
 @media (max-width: 768px) {
     body { padding: 0; }
-    #app { margin: 0; border-radius: 0; border: none; padding-bottom: 70px; }
+    #app { margin: 0; border-radius: 0; border: none; padding-bottom: 76px; }
     .app-header-row { padding: 16px 16px 12px; }
     .app-header-row h1 { font-size: 1.5em; }
-    .app-nav { padding: 0 8px; }
+
+    /* Bottom-Navigation auf Mobile statt scrollbarer Top-Leiste */
+    .app-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 500;
+        background: var(--bg-elevated);
+        border-top: 1px solid var(--border-color);
+        border-bottom: none;
+        justify-content: space-around;
+        padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+        overflow-x: visible;
+    }
+    .app-nav button {
+        flex: 1;
+        padding: 10px 4px;
+        font-size: 0.7em;
+        text-align: center;
+        border-bottom: none;
+        border-top: 2px solid transparent;
+    }
+    .app-nav button.active { border-top-color: var(--gold); border-bottom-color: transparent; }
+
     .form-actions, .settings-form {
         flex-direction: column;
         align-items: stretch;
