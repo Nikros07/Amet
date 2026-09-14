@@ -33,18 +33,31 @@ function wireStaticControls() {
     typeFilter.addEventListener('change', () => setListFilters({ type: typeFilter.value }));
 }
 
+// Supabase feuert onAuthStateChange nicht nur bei einem echten Login neu,
+// sondern u.a. auch beim Zurückkommen in den Tab (Fokus-/Sichtbarkeitswechsel,
+// Token-Refresh). Ohne diese Sperre würde jeder Tab-Wechsel einen kompletten
+// Neu-Ladevorgang aller Tabellen auslösen.
+let loadedForUserId = null;
+let loadInFlight = false;
+
 setAuthCallbacks({
     signedIn: async (session) => {
+        if (loadInFlight || loadedForUserId === session.user.id) return;
+        loadInFlight = true;
         try {
             await loadAllFromDb(session.user.id);
             renderApp();
+            loadedForUserId = session.user.id;
         } catch (err) {
             console.error(err);
             showToast(`Daten konnten nicht geladen werden: ${err.message || err}`, { type: 'error', duration: 8000 });
+        } finally {
+            loadInFlight = false;
         }
     },
     signedOut: () => {
         resetState();
+        loadedForUserId = null;
     }
 });
 

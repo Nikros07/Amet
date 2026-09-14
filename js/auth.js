@@ -30,33 +30,34 @@ export async function initAuth() {
         return;
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        showApp();
-        onSignedIn(session);
-    } else {
-        showLogin();
-    }
-
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-            showApp();
-            onSignedIn(session);
-        } else if (event === 'SIGNED_OUT') {
-            showLogin();
-            onSignedOut();
-        }
-    });
-
+    // Formular-Handler zuerst binden, BEVOR irgendein await läuft — falls
+    // getSession() hängt oder wirft, soll der Login trotzdem klickbar sein.
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         document.getElementById('loginError').textContent = '';
 
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-            document.getElementById('loginError').textContent = 'Login fehlgeschlagen: E-Mail oder Passwort falsch.';
+        const submitBtn = document.getElementById('loginForm').querySelector('button');
+        submitBtn.disabled = true;
+
+        try {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                document.getElementById('loginError').textContent = `Login fehlgeschlagen: ${error.message} (Status ${error.status ?? '?'})`;
+                submitBtn.disabled = false;
+                return;
+            }
+            // Voller Reload statt Live-Umschaltung: nutzt denselben Init-Pfad,
+            // der eine bestehende Session beim Laden zuverlässig erkennt. Kurze
+            // Pause davor, falls das Schreiben der Session in den Storage noch
+            // nicht ganz abgeschlossen ist, wenn signInWithPassword auflöst.
+            await new Promise((resolve) => setTimeout(resolve, 150));
+            window.location.reload();
+        } catch (err) {
+            console.error('Login-Fehler:', err);
+            document.getElementById('loginError').textContent = `Unerwarteter Fehler: ${err.message || err}`;
+            submitBtn.disabled = false;
         }
     });
 
@@ -64,4 +65,27 @@ export async function initAuth() {
         await supabase.auth.signOut();
         showToast('Abgemeldet.', { type: 'info' });
     });
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            showApp();
+            onSignedIn(session);
+        } else {
+            showLogin();
+        }
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                showApp();
+                onSignedIn(session);
+            } else if (event === 'SIGNED_OUT') {
+                showLogin();
+                onSignedOut();
+            }
+        });
+    } catch (err) {
+        console.error('Auth-Initialisierung fehlgeschlagen:', err);
+        showLogin(`Verbindung zu Supabase fehlgeschlagen: ${err.message || err}`);
+    }
 }
