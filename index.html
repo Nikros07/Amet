@@ -41,12 +41,30 @@
             </div>
 
             <nav class="app-nav">
-                <button type="button" data-view="dashboard" class="active">Dashboard</button>
-                <button type="button" data-view="transactions">Transactions</button>
-                <button type="button" data-view="analytics">Analytics</button>
-                <button type="button" data-view="goals">Goals</button>
-                <button type="button" data-view="ai">AI</button>
-                <button type="button" data-view="settings">Settings</button>
+                <button type="button" data-view="dashboard" class="active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                <button type="button" data-view="transactions">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h13l-3-3"/><path d="M20 17H7l3 3"/></svg>
+                    <span class="nav-text">Transactions</span>
+                </button>
+                <button type="button" data-view="analytics">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg>
+                    <span class="nav-text">Analytics</span>
+                </button>
+                <button type="button" data-view="goals">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.7" fill="currentColor" stroke="none"/></svg>
+                    <span class="nav-text">Goals</span>
+                </button>
+                <button type="button" data-view="ai">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c0 4-2.5 6.5-6.5 6.5 4 0 6.5 2.5 6.5 6.5 0-4 2.5-6.5 6.5-6.5-4 0-6.5-2.5-6.5-6.5Z"/></svg>
+                    <span class="nav-text">AI</span>
+                </button>
+                <button type="button" data-view="settings">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a8 8 0 0 0-1.7-1L14.9 3h-4l-.4 2.9a8 8 0 0 0-1.7 1l-2.5-1-2 3.4L6.4 11a7.97 7.97 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1a8 8 0 0 0 1.7 1L11 21h4l.4-2.9a8 8 0 0 0 1.7-1l2.5 1 2-3.4L19.4 13Z"/></svg>
+                    <span class="nav-text">Settings</span>
+                </button>
             </nav>
 
             <section class="view-section" data-view="dashboard">
@@ -73,12 +91,12 @@
 
             <section class="view-section" data-view="analytics" hidden>
                 <h2>Vermögensentwicklung</h2>
-                <div id="netWorthChartContainer" style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;">
+                <div id="netWorthChartContainer" class="chart-card">
                     <div class="chart-wrap"><canvas id="netWorthChart"></canvas></div>
                 </div>
 
                 <h2>Income vs Expenses</h2>
-                <div style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;">
+                <div class="chart-card">
                     <div class="chart-wrap"><canvas id="incomeExpenseChart"></canvas></div>
                 </div>
 
@@ -100,7 +118,7 @@
                 </div>
 
                 <h2>Forecast</h2>
-                <div id="forecastContainer" style="margin: 0 20px 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 18px;"></div>
+                <div id="forecastContainer" class="chart-card"></div>
             </section>
 
             <section class="view-section" data-view="goals" hidden>
