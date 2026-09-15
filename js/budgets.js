@@ -80,18 +80,29 @@ export function renderBudgets() {
 
     container.innerHTML = thisMonthBudgets.map(b => {
         const spent = spentThisMonth(b.category_id);
-        const pct = Math.min(100, Math.round((spent / b.limit_amount) * 100));
+        const rawPct = (spent / b.limit_amount) * 100;
+        const pct = Math.min(100, Math.round(rawPct));
         const over = spent > b.limit_amount;
+        // Dezenter Hinweis statt harter Fehlermeldung, solange nur die Nähe
+        // zum Limit erreicht ist (siehe Spec: "kann AMET dezent darauf
+        // hinweisen" — kein aufdringliches Rot, kein Popup, keine Notification).
+        const nearing = !over && rawPct >= 90;
         const categoryName = findCategory(b.category_id)?.name || 'Sonstiges';
+        let note = '';
+        if (over) {
+            note = '<p class="field-error" style="margin-top:8px;">Limit überschritten.</p>';
+        } else if (nearing) {
+            note = '<p class="budget-nearing-hint">Fast am Limit.</p>';
+        }
         return `
             <div class="budget-card" data-id="${b.id}">
                 <h4>${categoryName} <button type="button" class="deleteBudgetBtn" data-id="${b.id}" aria-label="Löschen">×</button></h4>
-                <div class="progress-bar"><div class="progress-bar-fill ${over ? 'over-budget' : ''}" style="width:${pct}%"></div></div>
+                <div class="progress-bar"><div class="progress-bar-fill ${over ? 'over-budget' : nearing ? 'nearing-budget' : ''}" style="width:${pct}%"></div></div>
                 <div class="progress-label">
                     <span>${formatCurrency(spent, cur)} / ${formatCurrency(b.limit_amount, cur)}</span>
                     <span>${pct}%</span>
                 </div>
-                ${over ? '<p class="field-error" style="margin-top:8px;">Limit überschritten.</p>' : ''}
+                ${note}
             </div>
         `;
     }).join('');

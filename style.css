@@ -700,6 +700,14 @@ button:disabled,
 }
 
 .progress-bar-fill.over-budget { background: var(--red); }
+.progress-bar-fill.nearing-budget { background: var(--gold); }
+
+.budget-nearing-hint {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 0.82em;
+    font-style: italic;
+}
 
 .progress-label {
     font-size: 0.82em;
