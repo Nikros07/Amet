@@ -1,6 +1,17 @@
 import { supabase } from './supabase-client.js';
 import { state, WALLET_LABELS, DEFAULT_CATEGORIES } from './state.js';
 
+// state.transactions muss nach date DESC sortiert bleiben (created_at als
+// Tiebreaker) — Dashboard/"Letzte Transaktionen" verlassen sich darauf und
+// zeigen sonst z.B. eine gerade nachgetragene alte Transaktion fälschlich
+// als die neueste an.
+function sortTransactions() {
+    state.transactions.sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+        return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+}
+
 async function ensureDefaults(userId) {
     const { data: wallets } = await supabase.from('wallets').select('*').eq('user_id', userId);
     if (!wallets || wallets.length === 0) {
@@ -30,7 +41,7 @@ export async function loadAllFromDb(userId) {
         supabase.from('wallets').select('*').eq('user_id', userId),
         supabase.from('categories').select('*').eq('user_id', userId),
         supabase.from('settings').select('*').eq('user_id', userId).single(),
-        supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
+        supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('goals').select('*').eq('user_id', userId),
         supabase.from('budgets').select('*').eq('user_id', userId)
     ]);
@@ -59,6 +70,7 @@ export async function insertTransaction(payload) {
         .single();
     if (error) throw error;
     state.transactions.unshift(data);
+    sortTransactions();
     return data;
 }
 
@@ -72,6 +84,7 @@ export async function updateTransaction(id, payload) {
     if (error) throw error;
     const index = state.transactions.findIndex(t => t.id === id);
     if (index !== -1) state.transactions[index] = data;
+    sortTransactions();
     return data;
 }
 
