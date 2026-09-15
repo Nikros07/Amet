@@ -1,6 +1,6 @@
 # Amet — Private Finance
 
-Privates Finance Command Center: trackt reale Geldbereiche (Konto, Bargeld in der Handyhülle, Reserve beim Bruder, Krypto, sonstiges Bargeld), rechnet daraus dein Gesamtvermögen und dein "direkt verfügbares" Geld (Konto + Handyhülle) gegen einen konfigurierbaren Zielbereich (Standard 100–150 €). Jedes Wallet kann einen Anfangssaldo bekommen (unter Settings), falls schon Geld da war, bevor du angefangen hast zu tracken.
+Privates Finance Command Center: trackt reale Geldbereiche (Konto, Bargeld in der Handyhülle, Reserve beim Bruder, Krypto, sonstiges Bargeld, Geldbeutel, Cash-Reserve zuhause), rechnet daraus dein Gesamtvermögen und dein "direkt verfügbares" Geld (Konto + Handyhülle) gegen einen konfigurierbaren Zielbereich (Standard 100–150 €). Jedes Wallet kann einen Anfangssaldo bekommen (unter Settings), falls schon Geld da war, bevor du angefangen hast zu tracken. Kein Wallet kann durch eine Ausgabe/einen Transfer ins Minus rutschen.
 
 Kein Bank-Zugriff, kein Open Banking, keine automatische Synchronisierung — alle Transaktionen werden manuell erfasst.
 
@@ -12,7 +12,7 @@ Kein Bank-Zugriff, kein Open Banking, keine automatische Synchronisierung — al
 
 1. Projekt auf [supabase.com](https://supabase.com) anlegen (kostenlos).
 2. Im SQL-Editor den kompletten Inhalt von [`supabase/schema.sql`](supabase/schema.sql) ausführen — legt Tabellen, Constraints und Row-Level-Security an.
-2b. Danach der Reihe nach alle Dateien aus [`supabase/migrations/`](supabase/migrations/) ausführen (aktuell `002_ownership_checks.sql`, `003_wallet_expansion.sql`) — ergänzen Ownership-Checks sowie die Krypto-/Bargeld-Wallets und den Anfangssaldo pro Wallet. Bei künftigen Updates hier einfach neue Dateien in Reihenfolge nachziehen.
+2b. Danach der Reihe nach alle Dateien aus [`supabase/migrations/`](supabase/migrations/) ausführen (aktuell `002_ownership_checks.sql`, `003_wallet_expansion.sql`, `004_wallet_expansion_2.sql`) — ergänzen Ownership-Checks sowie Krypto/Bargeld/Geldbeutel/Cash-Reserve-zuhause als Wallets und den Anfangssaldo pro Wallet. Bei künftigen Updates hier einfach neue Dateien in Reihenfolge nachziehen.
 3. Unter **Authentication → Providers** sicherstellen, dass "Email" aktiv ist, **Signups aber nicht öffentlich** sind (die App hat bewusst keinen Registrieren-Button).
 4. Unter **Authentication → Users → Add user** deinen einen Account anlegen (E-Mail + Passwort, "Auto Confirm User" aktivieren).
 5. Unter **Project Settings → API** die **Project URL** und den **anon public key** kopieren.

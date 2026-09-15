@@ -7,7 +7,9 @@ export const WALLET_LABELS = {
     phone_cash: 'Handyhülle',
     brother: 'Bruder',
     crypto: 'Krypto',
-    cash: 'Bargeld'
+    cash: 'Bargeld',
+    wallet: 'Geldbeutel',
+    home_cash: 'Cash-Reserve zuhause'
 };
 
 export const DEFAULT_CATEGORIES = {

@@ -112,6 +112,8 @@ export function renderDashboard() {
             ${walletCard('brother', 'Brother')}
             ${walletCard('crypto', 'Crypto')}
             ${walletCard('cash', 'Cash')}
+            ${walletCard('wallet', 'Wallet')}
+            ${walletCard('home_cash', 'Home Reserve')}
         </div>
 
         <div class="quick-entry">

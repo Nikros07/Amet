@@ -10,7 +10,9 @@ const WALLET_ALIASES = {
     phone_cash: ['handyhülle', 'handyhuelle', 'hülle', 'huelle', 'phone', 'handy'],
     brother: ['bruder', 'brother'],
     crypto: ['krypto', 'crypto', 'bitcoin', 'btc'],
-    cash: ['bargeld', 'cash', 'bar']
+    cash: ['bargeld', 'cash', 'bar'],
+    wallet: ['geldbeutel', 'wallet', 'portemonnaie', 'portmonee', 'geldbörse', 'geldboerse'],
+    home_cash: ['zuhause', 'daheim', 'hausreserve', 'homecash']
 };
 
 function resolveWalletAlias(token) {
