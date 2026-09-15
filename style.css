@@ -10,7 +10,7 @@
     --border-color: #262a30;
     --text-primary: #e7e5e0;
     --text-secondary: #86898f;
-    --text-muted: #5b5e64;
+    --text-muted: #75787f;
     --gold: #c8a24d;
     --gold-soft: rgba(200, 162, 77, 0.35);
     --navy: #34506e;
@@ -22,6 +22,35 @@
 
 * {
     box-sizing: border-box;
+}
+
+/* Subtle keyboard-focus ring — gold halo, only for keyboard/assistive nav
+   (:focus-visible suppresses it for mouse clicks on buttons, so pointer
+   interaction stays as clean as before). */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+/* Gentle entrance for cards/rows/messages as they first render — kept short
+   and purely opacity/transform so it stays cheap on low-end devices. */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 body {
@@ -187,6 +216,21 @@ h2 {
     transform: scale(0.98);
 }
 
+/* Loading feedback: buttons get disabled while a request is in flight (e.g.
+   the login button's text swaps to "Lade…") — without this they looked
+   identical to a normal clickable button, which read as unresponsive. */
+button:disabled,
+.addBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    animation: pulse-loading 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-loading {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 0.85; }
+}
+
 .form-group {
     margin: 0 20px 15px;
     min-width: 200px;
@@ -306,7 +350,15 @@ h2 {
     padding: 18px;
     text-align: left;
     transition: var(--transition);
+    animation: fadeInUp 0.35s ease both;
 }
+
+.summary-card:hover {
+    border-color: var(--text-muted);
+}
+
+#summaryContainer .summary-card:nth-child(2) { animation-delay: 0.04s; }
+#summaryContainer .summary-card:nth-child(3) { animation-delay: 0.08s; }
 
 .summary-card h3 {
     margin: 0 0 8px 0;
@@ -344,6 +396,19 @@ h2 {
     border-radius: var(--border-radius);
     padding: 18px;
     text-align: left;
+    animation: fadeInUp 0.4s ease both;
+}
+
+/* Shared card shell for the analytics chart wrappers — previously repeated
+   as inline styles on each container in index.html; consolidated here so
+   spacing/padding stays consistent with the rest of the app's cards. */
+.chart-card {
+    margin: 0 20px 20px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 18px;
+    animation: fadeInUp 0.4s ease both;
 }
 
 #reportsContainer h3 {
@@ -383,6 +448,7 @@ h2 {
     border-left: 2px solid var(--gold);
     border-radius: var(--border-radius);
     padding: 26px 22px;
+    animation: fadeInUp 0.4s ease both;
 }
 
 .total-wealth-block h3 {
@@ -413,14 +479,19 @@ h2 {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 16px;
+    padding: 18px;
     text-align: left;
-    transition: var(--transition);
+    transition: border-color var(--transition), transform var(--transition);
+    animation: fadeInUp 0.4s ease both;
 }
 
 .wallet-card:hover {
     border-color: var(--text-muted);
 }
+
+.wallet-grid .wallet-card:nth-child(2) { animation-delay: 0.04s; }
+.wallet-grid .wallet-card:nth-child(3) { animation-delay: 0.08s; }
+.wallet-grid .wallet-card:nth-child(4) { animation-delay: 0.12s; }
 
 .wallet-card h3 {
     margin: 0 0 6px;
@@ -454,7 +525,9 @@ h2 {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 16px;
+    padding: 18px;
+    animation: fadeInUp 0.4s ease both;
+    animation-delay: 0.08s;
 }
 
 .quick-entry label {
@@ -499,7 +572,9 @@ h2 {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 16px;
+    padding: 18px;
+    animation: fadeInUp 0.4s ease both;
+    animation-delay: 0.12s;
 }
 
 .recent-transactions h3 {
@@ -527,6 +602,7 @@ h2 {
     padding: 8px 0;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.88em;
+    animation: fadeInUp 0.3s ease both;
 }
 
 .recent-item:last-child { border-bottom: none; }
@@ -576,7 +652,13 @@ h2 {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 16px;
+    padding: 18px;
+    transition: border-color var(--transition);
+    animation: fadeInUp 0.35s ease both;
+}
+
+.goal-card:hover, .budget-card:hover {
+    border-color: var(--text-muted);
 }
 
 .goal-card h4, .budget-card h4 {
@@ -607,11 +689,12 @@ h2 {
     border-radius: 3px;
     overflow: hidden;
     margin: 8px 0 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .progress-bar-fill {
     height: 100%;
-    background: var(--gold);
+    background: linear-gradient(90deg, var(--gold), #ddbb70);
     border-radius: 3px;
     transition: width 0.4s ease;
 }
@@ -642,6 +725,31 @@ h2 {
     font-family: inherit;
 }
 
+/* Per-goal contribution button — previously unstyled (default browser
+   button), which stood out against the app's consistently themed controls. */
+.addContributionBtn {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 10px 14px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85em;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: var(--transition);
+}
+
+.addContributionBtn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.addContributionBtn:active {
+    transform: scale(0.98);
+}
+
 /* ---------- Navigation ---------- */
 
 .app-nav {
@@ -653,6 +761,9 @@ h2 {
 }
 
 .app-nav button {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
@@ -669,10 +780,24 @@ h2 {
 .app-nav button:hover { color: var(--text-primary); }
 .app-nav button.active { color: var(--gold); border-bottom-color: var(--gold); }
 
+/* Nav icons: hidden on the desktop top-tab layout (text-only tabs stay as
+   designed), shown on the mobile bottom nav where a label-only row of six
+   items reads as flat and hard to scan at a glance. currentColor means the
+   icon automatically follows the button's own text color, active or not. */
+.nav-icon {
+    display: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
 .view-section { display: block; }
 .view-section[hidden] { display: none; }
 
-.work-hours-fields { display: flex; gap: 10px; }
+/* flex-wrap matters here: the mobile media query sets .form-group to
+   min-width:100%, and without wrapping this row's two fields would each
+   demand the full container width, pushing "€/Stunde" off-screen. */
+.work-hours-fields { display: flex; gap: 10px; flex-wrap: wrap; }
 .work-hours-fields[hidden] { display: none; }
 
 /* ---------- AI Panel ---------- */
@@ -745,6 +870,7 @@ h2 {
     font-size: 0.92em;
     line-height: 1.5;
     max-width: 90%;
+    animation: fadeInUp 0.3s ease both;
 }
 
 .ai-message.user {
@@ -910,7 +1036,9 @@ h2 {
     color: var(--text-muted);
     font-style: italic;
     text-align: center;
-    padding: 10px 0;
+    padding: 22px 10px;
+    font-size: 0.92em;
+    animation: fadeInUp 0.3s ease both;
 }
 
 /* ---------- Inline-Formularvalidierung ---------- */
@@ -965,6 +1093,7 @@ h2 {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(3px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1045,13 +1174,17 @@ h2 {
     }
     .app-nav button {
         flex: 1;
-        padding: 10px 4px;
-        font-size: 0.7em;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        font-size: 0.68em;
         text-align: center;
         border-bottom: none;
         border-top: 2px solid transparent;
     }
     .app-nav button.active { border-top-color: var(--gold); border-bottom-color: transparent; }
+    .nav-icon { display: block; }
 
     .form-actions, .settings-form {
         flex-direction: column;
