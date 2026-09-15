@@ -34,7 +34,7 @@ async function ensureDefaults(userId) {
         // ursprünglichen drei Wallets weitermachen — Krypto/Bargeld erscheinen
         // dann einfach erst nach der Migration.
         console.warn('Wallet-Upsert unvollständig (Migration 003 evtl. noch nicht ausgeführt):', walletsErr.message || walletsErr);
-        const legacyRows = rows.filter(r => ['account', 'phone_cash', 'brother', 'crypto', 'cash'].includes(r.key));
+        const legacyRows = rows.filter(r => ['account', 'phone_cash', 'brother'].includes(r.key));
         const { error: legacyErr } = await supabase.from('wallets').upsert(legacyRows, { onConflict: 'user_id,key', ignoreDuplicates: true });
         if (legacyErr) throw legacyErr;
     }

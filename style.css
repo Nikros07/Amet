@@ -493,9 +493,6 @@ button:disabled,
 .wallet-grid .wallet-card:nth-child(3) { animation-delay: 0.08s; }
 .wallet-grid .wallet-card:nth-child(4) { animation-delay: 0.12s; }
 .wallet-grid .wallet-card:nth-child(5) { animation-delay: 0.16s; }
-.wallet-grid .wallet-card:nth-child(6) { animation-delay: 0.2s; }
-.wallet-grid .wallet-card:nth-child(7) { animation-delay: 0.24s; }
-.wallet-grid .wallet-card:nth-child(8) { animation-delay: 0.28s; }
 
 .wallet-card h3 {
     margin: 0 0 6px;

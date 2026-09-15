@@ -10,9 +10,10 @@ const WALLET_ALIASES = {
     phone_cash: ['handyhülle', 'handyhuelle', 'hülle', 'huelle', 'phone', 'handy'],
     brother: ['bruder', 'brother'],
     crypto: ['krypto', 'crypto', 'bitcoin', 'btc'],
-    cash: ['bargeld', 'cash', 'bar'],
-    wallet: ['geldbeutel', 'wallet', 'portemonnaie', 'portmonee', 'geldbörse', 'geldboerse'],
-    home_cash: ['zuhause', 'daheim', 'hausreserve', 'homecash']
+    // Bargeld landet in der Praxis ohnehin immer im Geldbeutel — "bargeld"/
+    // "cash"/"zuhause" usw. zeigen deshalb alle direkt auf dasselbe Wallet,
+    // statt eigene (verwirrende) Wallets dafür zu brauchen.
+    wallet: ['geldbeutel', 'wallet', 'portemonnaie', 'portmonee', 'geldbörse', 'geldboerse', 'bargeld', 'cash', 'bar', 'zuhause', 'daheim']
 };
 
 function resolveWalletAlias(token) {
