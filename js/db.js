@@ -21,12 +21,22 @@ function sortTransactions() {
 // mit null/leeren Wallets weiterläuft. upsert mit ignoreDuplicates ist dagegen
 // idempotent, und verbleibende Fehler werden jetzt geworfen statt verschluckt.
 async function ensureDefaults(userId) {
-    const { data: wallets, error: walletsSelectErr } = await supabase.from('wallets').select('*').eq('user_id', userId);
-    if (walletsSelectErr) throw walletsSelectErr;
-    if (!wallets || wallets.length === 0) {
-        const rows = Object.entries(WALLET_LABELS).map(([key, name]) => ({ user_id: userId, key, name }));
-        const { error } = await supabase.from('wallets').upsert(rows, { onConflict: 'user_id,key', ignoreDuplicates: true });
-        if (error) throw error;
+    // Immer alle bekannten Wallet-Keys upserten (nicht nur wenn komplett leer):
+    // idempotent dank ignoreDuplicates, aber so bekommen auch Bestandsnutzer neu
+    // eingeführte Wallet-Typen (z.B. Krypto/Bargeld) automatisch beim nächsten
+    // Login hinzu, statt für immer bei ihren ursprünglichen drei zu bleiben.
+    const rows = Object.entries(WALLET_LABELS).map(([key, name]) => ({ user_id: userId, key, name }));
+    const { error: walletsErr } = await supabase.from('wallets').upsert(rows, { onConflict: 'user_id,key', ignoreDuplicates: true });
+    if (walletsErr) {
+        // Falls Migration 003 (neue Wallet-Keys/opening_balance-Spalte) noch
+        // nicht im Supabase-Projekt ausgeführt wurde, würde der CHECK-Constraint
+        // hier scheitern. Statt den kompletten Login zu blockieren, mit den
+        // ursprünglichen drei Wallets weitermachen — Krypto/Bargeld erscheinen
+        // dann einfach erst nach der Migration.
+        console.warn('Wallet-Upsert unvollständig (Migration 003 evtl. noch nicht ausgeführt):', walletsErr.message || walletsErr);
+        const legacyRows = rows.filter(r => ['account', 'phone_cash', 'brother'].includes(r.key));
+        const { error: legacyErr } = await supabase.from('wallets').upsert(legacyRows, { onConflict: 'user_id,key', ignoreDuplicates: true });
+        if (legacyErr) throw legacyErr;
     }
 
     const { data: categories, error: categoriesSelectErr } = await supabase.from('categories').select('*').eq('user_id', userId);
@@ -123,6 +133,45 @@ export async function deleteCategory(id, type) {
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) throw error;
     state.categories[type] = state.categories[type].filter(c => c.id !== id);
+}
+
+export async function updateWalletOpeningBalance(walletId, openingBalance) {
+    const { data, error } = await supabase
+        .from('wallets')
+        .update({ opening_balance: openingBalance })
+        .eq('id', walletId)
+        .select()
+        .single();
+    if (error) throw error;
+    const index = state.wallets.findIndex(w => w.id === walletId);
+    if (index !== -1) state.wallets[index] = data;
+    return data;
+}
+
+// Setzt den Nutzer komplett zurück: alle Transaktionen/Ziele/Budgets weg,
+// Anfangssalden auf 0. Kategorien, Settings und der Login-Account bleiben
+// erhalten — ein "frischer Start", kein neuer Account.
+export async function resetAllData() {
+    const userId = state.userId;
+    const [txRes, goalsRes, budgetsRes] = await Promise.all([
+        supabase.from('transactions').delete().eq('user_id', userId),
+        supabase.from('goals').delete().eq('user_id', userId),
+        supabase.from('budgets').delete().eq('user_id', userId)
+    ]);
+    for (const res of [txRes, goalsRes, budgetsRes]) {
+        if (res.error) throw res.error;
+    }
+    const { data: wallets, error: walletsErr } = await supabase
+        .from('wallets')
+        .update({ opening_balance: 0 })
+        .eq('user_id', userId)
+        .select();
+    if (walletsErr) throw walletsErr;
+
+    state.transactions = [];
+    state.goals = [];
+    state.budgets = [];
+    state.wallets = wallets;
 }
 
 export async function updateSettings(payload) {

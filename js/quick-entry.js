@@ -7,8 +7,10 @@ import { parseLocaleNumber } from './format.js';
 
 const WALLET_ALIASES = {
     account: ['konto', 'account', 'bank'],
-    phone_cash: ['handyhülle', 'handyhuelle', 'hülle', 'huelle', 'phone', 'handy', 'bargeld', 'cash'],
-    brother: ['bruder', 'brother']
+    phone_cash: ['handyhülle', 'handyhuelle', 'hülle', 'huelle', 'phone', 'handy'],
+    brother: ['bruder', 'brother'],
+    crypto: ['krypto', 'crypto', 'bitcoin', 'btc'],
+    cash: ['bargeld', 'cash', 'bar']
 };
 
 function resolveWalletAlias(token) {

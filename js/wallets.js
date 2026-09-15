@@ -5,6 +5,8 @@
 import { state } from './state.js';
 
 export function getWalletBalance(walletId) {
+    const wallet = state.wallets.find(w => w.id === walletId);
+    const opening = wallet ? (wallet.opening_balance || 0) : 0;
     return state.transactions.reduce((balance, t) => {
         if (t.type === 'income' && t.wallet_id === walletId) return balance + t.amount;
         if (t.type === 'expense' && t.wallet_id === walletId) return balance - t.amount;
@@ -13,7 +15,7 @@ export function getWalletBalance(walletId) {
             if (t.to_wallet_id === walletId) return balance + t.amount;
         }
         return balance;
-    }, 0);
+    }, opening);
 }
 
 export function getAllWalletBalances() {

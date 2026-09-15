@@ -1,5 +1,5 @@
-import { state } from './state.js';
-import { updateSettings, insertCategory, deleteCategory } from './db.js';
+import { state, WALLET_LABELS } from './state.js';
+import { updateSettings, insertCategory, deleteCategory, updateWalletOpeningBalance, resetAllData } from './db.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
 
@@ -53,6 +53,21 @@ export function renderSettingsForm() {
                 </div>
             </div>
         </form>
+
+        <div class="form-group">
+            <label>Wallets &amp; Anfangssaldo</label>
+            <small>Betrag, den ein Wallet schon hatte, bevor du angefangen hast, ihn in AMET zu erfassen. Spätere Transaktionen werden ab diesem Wert weitergerechnet.</small>
+            <div id="walletBalanceList" class="wallet-balance-list"></div>
+        </div>
+
+        <div class="danger-zone">
+            <h3>Danger Zone</h3>
+            <p>Löscht unwiderruflich alle Transaktionen, Ziele und Budgets und setzt alle Anfangssalden auf 0. Kategorien, Einstellungen und dein Login-Zugang bleiben erhalten — ein kompletter Neustart mit leerem Verlauf.</p>
+            <div class="danger-zone-confirm">
+                <input type="text" id="resetConfirmInput" placeholder='Tippe ZURÜCKSETZEN zum Bestätigen' autocomplete="off">
+                <button type="button" id="resetAllBtn" class="dangerBtn" disabled>Alles zurücksetzen</button>
+            </div>
+        </div>
     `;
 
     const form = document.getElementById('settingsForm');
@@ -81,6 +96,66 @@ export function renderSettingsForm() {
     });
 
     renderCategoryManager();
+    renderWalletBalances();
+    wireDangerZone();
+}
+
+function renderWalletBalances() {
+    const container = document.getElementById('walletBalanceList');
+    if (!container) return;
+
+    container.innerHTML = state.wallets.map(w => `
+        <div class="wallet-balance-row" data-id="${w.id}">
+            <label for="opening-${w.id}">${WALLET_LABELS[w.key] || w.name}</label>
+            <input type="number" id="opening-${w.id}" step="0.01" value="${w.opening_balance ?? 0}">
+            <button type="button" class="saveWalletBalanceBtn" data-id="${w.id}">Speichern</button>
+        </div>
+    `).join('');
+
+    container.querySelectorAll('.saveWalletBalanceBtn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const input = document.getElementById(`opening-${id}`);
+            const value = parseFloat(input.value);
+            if (isNaN(value)) {
+                showToast('Ungültiger Betrag.', { type: 'error' });
+                return;
+            }
+            btn.disabled = true;
+            try {
+                await updateWalletOpeningBalance(id, value);
+                showToast('Anfangssaldo gespeichert.', { type: 'success' });
+                onChange();
+            } catch (err) {
+                showToast(`Speichern fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+                btn.disabled = false;
+            }
+        });
+    });
+}
+
+function wireDangerZone() {
+    const input = document.getElementById('resetConfirmInput');
+    const button = document.getElementById('resetAllBtn');
+    if (!input || !button) return;
+
+    input.addEventListener('input', () => {
+        button.disabled = input.value.trim() !== 'ZURÜCKSETZEN';
+    });
+
+    button.addEventListener('click', async () => {
+        const ok = await confirmDialog('Wirklich ALLE Transaktionen, Ziele und Budgets löschen und Anfangssalden auf 0 setzen? Das kann nicht rückgängig gemacht werden.');
+        if (!ok) return;
+        button.disabled = true;
+        try {
+            await resetAllData();
+            showToast('Zurückgesetzt — bereit für einen frischen Start.', { type: 'success' });
+            onChange();
+        } catch (err) {
+            showToast(`Zurücksetzen fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+            button.disabled = false;
+        }
+    });
 }
 
 function markError(input, message) {
