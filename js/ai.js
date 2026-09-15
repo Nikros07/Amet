@@ -6,7 +6,7 @@
 import { supabase } from './supabase-client.js';
 import { state, findCategory } from './state.js';
 import { getTotalWealth, getDirectlyAvailableStatus, getAllWalletBalances } from './wallets.js';
-import { formatCurrency } from './format.js';
+import { formatCurrency, parseLocalDate, parseLocaleNumber } from './format.js';
 
 const QUICK_ACTIONS = [
     'Wie steh ich?',
@@ -20,7 +20,7 @@ let history = [];
 function periodTotals(days) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    const relevant = state.transactions.filter(t => new Date(t.date) >= cutoff);
+    const relevant = state.transactions.filter(t => parseLocalDate(t.date) >= cutoff);
     return {
         income: relevant.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
         expense: relevant.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
@@ -32,7 +32,7 @@ function topExpenseCategories(days, limit = 3) {
     cutoff.setDate(cutoff.getDate() - days);
     const byCategory = {};
     state.transactions
-        .filter(t => t.type === 'expense' && new Date(t.date) >= cutoff)
+        .filter(t => t.type === 'expense' && parseLocalDate(t.date) >= cutoff)
         .forEach(t => {
             const name = findCategory(t.category_id)?.name || 'Sonstiges';
             byCategory[name] = (byCategory[name] || 0) + t.amount;
@@ -80,9 +80,9 @@ function localFallbackAnswer(question) {
     const s = computeFinancialSummary();
     const q = question.toLowerCase();
 
-    const spendMatch = q.match(/(\d+(?:[.,]\d+)?)\s*€?.*(ausgeben|leisten|kaufen)/);
+    const spendMatch = q.match(/(\d+(?:[.,]\d+)*)\s*€?.*(ausgeben|leisten|kaufen)/);
     if (spendMatch) {
-        const amount = parseFloat(spendMatch[1].replace(',', '.'));
+        const amount = parseLocaleNumber(spendMatch[1]);
         const remaining = s.directlyAvailable.value - amount;
         const min = state.settings.direct_available_min;
         if (remaining >= min) {

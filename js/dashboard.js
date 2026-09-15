@@ -1,6 +1,6 @@
 import { state, findCategory, findWallet } from './state.js';
 import { getTotalWealth, getWalletByKey, getWalletBalance, getDirectlyAvailableStatus } from './wallets.js';
-import { formatCurrency, formatDate } from './format.js';
+import { formatCurrency, formatDate, parseLocalDate } from './format.js';
 import { parseQuickEntry } from './quick-entry.js';
 import { prefillForm } from './transactions.js';
 import { showToast } from './toast.js';
@@ -17,7 +17,7 @@ function walletCard(key, label) {
 }
 
 function periodStats(sinceDate) {
-    const relevant = state.transactions.filter(t => new Date(t.date) >= sinceDate);
+    const relevant = state.transactions.filter(t => parseLocalDate(t.date) >= sinceDate);
     const income = relevant.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = relevant.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     return { income, expense, net: income - expense };

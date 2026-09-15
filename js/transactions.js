@@ -1,6 +1,6 @@
 import { state, findWallet, findCategory, WALLET_LABELS } from './state.js';
 import { insertTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction } from './db.js';
-import { formatCurrency, formatDate } from './format.js';
+import { formatCurrency, formatDate, todayLocalISODate } from './format.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
 
@@ -36,7 +36,7 @@ function blankTransaction() {
     return {
         type: 'income',
         amount: '',
-        date: new Date().toISOString().split('T')[0],
+        date: todayLocalISODate(),
         wallet_id: accountWallet ? accountWallet.id : '',
         to_wallet_id: '',
         category_id: state.categories.income[0]?.id || '',

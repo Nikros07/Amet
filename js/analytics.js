@@ -1,16 +1,16 @@
 import { state } from './state.js';
-import { formatCurrency } from './format.js';
+import { formatCurrency, parseLocalDate } from './format.js';
 
 let netWorthChart = null;
 let incomeExpenseChart = null;
 
 function monthKey(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseLocalDate(dateStr);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function computeNetWorthByDay() {
-    const sorted = [...state.transactions].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...state.transactions].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
     let total = 0;
     const byDay = new Map();
     for (const t of sorted) {
@@ -107,7 +107,7 @@ export function renderForecast() {
 
     const thisMonthNet = state.transactions
         .filter(t => {
-            const d = new Date(t.date);
+            const d = parseLocalDate(t.date);
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
         })
         .reduce((sum, t) => {

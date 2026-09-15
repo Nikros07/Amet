@@ -1,6 +1,6 @@
 import { state, findCategory } from './state.js';
 import { insertBudget, deleteBudget } from './db.js';
-import { formatCurrency } from './format.js';
+import { formatCurrency, parseLocalDate } from './format.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
 
@@ -20,7 +20,7 @@ function spentThisMonth(categoryId) {
     return state.transactions
         .filter(t => t.type === 'expense' && t.category_id === categoryId)
         .filter(t => {
-            const d = new Date(t.date);
+            const d = parseLocalDate(t.date);
             return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
         })
         .reduce((sum, t) => sum + t.amount, 0);
@@ -39,7 +39,8 @@ export function renderBudgetAddRow() {
         <button type="button" id="addBudgetBtn" class="addBtn">Budget anlegen</button>
     `;
 
-    document.getElementById('addBudgetBtn').addEventListener('click', async () => {
+    const addBtn = document.getElementById('addBudgetBtn');
+    addBtn.addEventListener('click', async () => {
         const categoryId = document.getElementById('newBudgetCategory').value;
         const limit = parseFloat(document.getElementById('newBudgetLimit').value);
         if (!categoryId || isNaN(limit) || limit <= 0) {
@@ -51,12 +52,16 @@ export function renderBudgetAddRow() {
             showToast('Für diese Kategorie existiert diesen Monat schon ein Budget.', { type: 'error' });
             return;
         }
+        // Sperren, damit ein Doppelklick nicht zwei parallele Inserts auslöst,
+        // bevor der obige Duplikat-Check den lokalen State neu sehen konnte.
+        addBtn.disabled = true;
         try {
             await insertBudget({ category_id: categoryId, month, limit_amount: limit });
             showToast('Budget angelegt.', { type: 'success' });
             onChange();
         } catch (err) {
             showToast(`Anlegen fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+            addBtn.disabled = false;
         }
     });
 }
