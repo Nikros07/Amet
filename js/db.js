@@ -12,25 +12,39 @@ function sortTransactions() {
     });
 }
 
+// Erzeugt die Default-Zeilen (Wallets/Kategorien/Settings) beim ersten Login.
+// Nutzt upsert+ignoreDuplicates statt insert: wenn derselbe Nutzer sich fast
+// gleichzeitig in zwei Tabs/Geräten zum allerersten Mal einloggt, würde ein
+// reines insert() im zweiten Tab an der unique-Constraint (user_id, key) bzw.
+// (user_id, type, name) scheitern und — da der Fehler bisher nicht geprüft
+// wurde — VOLLSTÄNDIG UNBEMERKT durchfallen, sodass der zweite Tab am Ende
+// mit null/leeren Wallets weiterläuft. upsert mit ignoreDuplicates ist dagegen
+// idempotent, und verbleibende Fehler werden jetzt geworfen statt verschluckt.
 async function ensureDefaults(userId) {
-    const { data: wallets } = await supabase.from('wallets').select('*').eq('user_id', userId);
+    const { data: wallets, error: walletsSelectErr } = await supabase.from('wallets').select('*').eq('user_id', userId);
+    if (walletsSelectErr) throw walletsSelectErr;
     if (!wallets || wallets.length === 0) {
         const rows = Object.entries(WALLET_LABELS).map(([key, name]) => ({ user_id: userId, key, name }));
-        await supabase.from('wallets').insert(rows);
+        const { error } = await supabase.from('wallets').upsert(rows, { onConflict: 'user_id,key', ignoreDuplicates: true });
+        if (error) throw error;
     }
 
-    const { data: categories } = await supabase.from('categories').select('*').eq('user_id', userId);
+    const { data: categories, error: categoriesSelectErr } = await supabase.from('categories').select('*').eq('user_id', userId);
+    if (categoriesSelectErr) throw categoriesSelectErr;
     if (!categories || categories.length === 0) {
         const rows = [
             ...DEFAULT_CATEGORIES.income.map(name => ({ user_id: userId, type: 'income', name })),
             ...DEFAULT_CATEGORIES.expense.map(name => ({ user_id: userId, type: 'expense', name }))
         ];
-        await supabase.from('categories').insert(rows);
+        const { error } = await supabase.from('categories').upsert(rows, { onConflict: 'user_id,type,name', ignoreDuplicates: true });
+        if (error) throw error;
     }
 
-    const { data: settings } = await supabase.from('settings').select('*').eq('user_id', userId).maybeSingle();
+    const { data: settings, error: settingsSelectErr } = await supabase.from('settings').select('*').eq('user_id', userId).maybeSingle();
+    if (settingsSelectErr) throw settingsSelectErr;
     if (!settings) {
-        await supabase.from('settings').insert({ user_id: userId });
+        const { error } = await supabase.from('settings').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+        if (error) throw error;
     }
 }
 
