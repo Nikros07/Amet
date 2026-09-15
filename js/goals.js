@@ -19,19 +19,25 @@ export function renderGoalAddRow() {
         <button type="button" id="addGoalBtn" class="addBtn">Ziel anlegen</button>
     `;
 
-    document.getElementById('addGoalBtn').addEventListener('click', async () => {
+    const addBtn = document.getElementById('addGoalBtn');
+    addBtn.addEventListener('click', async () => {
         const name = document.getElementById('newGoalName').value.trim();
         const target = parseFloat(document.getElementById('newGoalTarget').value);
         if (!name || isNaN(target) || target <= 0) {
             showToast('Bitte Name und einen gültigen Zielbetrag angeben.', { type: 'error' });
             return;
         }
+        // Ohne diese Sperre erzeugt ein Doppelklick zwei identische Sparziele —
+        // anders als bei Budgets/Kategorien gibt es dafür keine DB-Unique-
+        // Constraint, die das auffangen würde.
+        addBtn.disabled = true;
         try {
             await insertGoal({ name, target_amount: target, current_amount: 0 });
             showToast('Sparziel angelegt.', { type: 'success' });
             onChange();
         } catch (err) {
             showToast(`Anlegen fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+            addBtn.disabled = false;
         }
     });
 }
@@ -87,6 +93,14 @@ export function renderGoals() {
                 showToast('Bitte einen gültigen Betrag eingeben.', { type: 'error' });
                 return;
             }
+            // Zwei schnelle Klicks würden sonst beide vom selben (noch nicht
+            // aktualisierten) current_amount ausgehen — der zweite Request
+            // überschreibt den ersten, statt beide Beiträge zu addieren, und
+            // ein Beitrag geht wortlos verloren. Button während des Requests
+            // sperren, damit onChange() zuerst den frischen Stand nachlädt.
+            const target = e.currentTarget;
+            target.disabled = true;
+            input.disabled = true;
             const goal = state.goals.find(g => g.id === id);
             try {
                 await updateGoal(id, { current_amount: goal.current_amount + amount });
@@ -94,6 +108,8 @@ export function renderGoals() {
                 onChange();
             } catch (err) {
                 showToast(`Speichern fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+                target.disabled = false;
+                input.disabled = false;
             }
         });
     });

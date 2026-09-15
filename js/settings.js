@@ -123,18 +123,26 @@ function renderCategoryManager() {
 function bindAddCategory(buttonId, inputId, type) {
     const button = document.getElementById(buttonId);
     const input = document.getElementById(inputId);
+    let submitting = false;
     const submit = async () => {
         const name = input.value.trim();
-        if (!name) return;
+        if (!name || submitting) return;
         if (state.categories[type].some(c => c.name.toLowerCase() === name.toLowerCase())) {
             showToast(`"${name}" existiert schon.`, { type: 'error' });
             return;
         }
+        // Button-Klick und Enter-Taste rufen beide submit() auf — ohne Sperre
+        // könnte ein Klick+Enter-Doppelschlag zwei Inserts auslösen, bevor der
+        // obige Duplikat-Check den lokalen State neu sehen konnte.
+        submitting = true;
+        button.disabled = true;
         try {
             await insertCategory(type, name);
             onChange();
         } catch (err) {
             showToast(`Anlegen fehlgeschlagen: ${err.message || err}`, { type: 'error' });
+            submitting = false;
+            button.disabled = false;
         }
     };
     button.addEventListener('click', submit);
