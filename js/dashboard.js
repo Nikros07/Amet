@@ -16,18 +16,44 @@ function walletCard(key, label) {
     `;
 }
 
-function periodStats(sinceDate) {
-    const relevant = state.transactions.filter(t => parseLocalDate(t.date) >= sinceDate);
+function periodStatsRange(fromDate, toDate) {
+    const relevant = state.transactions.filter(t => {
+        const d = parseLocalDate(t.date);
+        return d >= fromDate && d < toDate;
+    });
     const income = relevant.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const expense = relevant.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
     return { income, expense, net: income - expense };
 }
 
-function recapRow(label, stats, cur) {
+// Vergleich zur direkt vorangegangenen, gleich langen Periode (Spec: "Entwicklung
+// gegenüber vorherigen Zeiträumen"). Bei einer Vorperiode von 0 ist ein Prozent-
+// Vergleich bedeutungslos (Division durch 0 bzw. "unendlich % mehr") — dann wird
+// nur die absolute Differenz gezeigt statt einer irreführenden Prozentzahl.
+function trendVsPrevious(current, previous) {
+    const diff = current.net - previous.net;
+    if (previous.net === 0) {
+        if (diff === 0) return null;
+        return { diff, pct: null };
+    }
+    return { diff, pct: Math.round((diff / Math.abs(previous.net)) * 100) };
+}
+
+function recapRow(label, stats, prevStats, cur) {
     const sign = stats.net >= 0 ? '+' : '';
+    const trend = trendVsPrevious(stats, prevStats);
+    let trendHtml = '';
+    if (trend) {
+        const arrow = trend.diff >= 0 ? '▲' : '▼';
+        const trendClass = trend.diff >= 0 ? 'trend-up' : 'trend-down';
+        const trendText = trend.pct === null
+            ? `${arrow} ${formatCurrency(Math.abs(trend.diff), cur)} ggü. Vorperiode`
+            : `${arrow} ${Math.abs(trend.pct)}% ggü. Vorperiode`;
+        trendHtml = `<span class="recap-trend ${trendClass}">${trendText}</span>`;
+    }
     return `
         <div class="recap-row">
-            <span>${label}</span>
+            <span>${label}${trendHtml}</span>
             <span class="recap-figures">
                 <span class="recent-amount recent-income">+${formatCurrency(stats.income, cur)}</span>
                 <span class="recent-amount recent-expense">−${formatCurrency(stats.expense, cur)}</span>
@@ -61,9 +87,13 @@ export function renderDashboard() {
 
     const now = new Date();
     const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
     const monthAgo = new Date(now); monthAgo.setDate(now.getDate() - 30);
-    const weekStats = periodStats(weekAgo);
-    const monthStats = periodStats(monthAgo);
+    const twoMonthsAgo = new Date(now); twoMonthsAgo.setDate(now.getDate() - 60);
+    const weekStats = periodStatsRange(weekAgo, now);
+    const prevWeekStats = periodStatsRange(twoWeeksAgo, weekAgo);
+    const monthStats = periodStatsRange(monthAgo, now);
+    const prevMonthStats = periodStatsRange(twoMonthsAgo, monthAgo);
 
     container.innerHTML = `
         <div class="total-wealth-block">
@@ -94,8 +124,8 @@ export function renderDashboard() {
         <div class="recent-transactions">
             <h3>Recap</h3>
             <div class="recap-list">
-                ${recapRow('Diese Woche', weekStats, cur)}
-                ${recapRow('Diesen Monat', monthStats, cur)}
+                ${recapRow('Diese Woche', weekStats, prevWeekStats, cur)}
+                ${recapRow('Diesen Monat', monthStats, prevMonthStats, cur)}
             </div>
         </div>
 

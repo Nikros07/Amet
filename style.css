@@ -634,6 +634,16 @@ button:disabled,
 
 .recap-figures strong { color: var(--text-primary); }
 
+.recap-trend {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.85em;
+    font-weight: 400;
+}
+
+.recap-trend.trend-up { color: var(--green); }
+.recap-trend.trend-down { color: var(--text-muted); }
+
 .recent-date { color: var(--text-muted); font-size: 0.85em; }
 .recent-amount.recent-income { color: var(--green); font-weight: 600; font-variant-numeric: tabular-nums; }
 .recent-amount.recent-expense { color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
