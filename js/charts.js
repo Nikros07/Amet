@@ -1,10 +1,13 @@
 import { state, findCategory } from './state.js';
 import { formatCurrency } from './format.js';
 
-const PALETTE = ['#d4af37', '#8b0000', '#c81e1e', '#a89a83', '#f4d675', '#5c4a2e', '#6b1414', '#e8c96a'];
+// Palette matches the CSS custom properties in style.css (gold/green/red/navy
+// plus a few muted tints) — this used to be a leftover reddish-gold "mafia"
+// palette from an earlier design pass that didn't match the app's theme.
+const PALETTE = ['#c8a24d', '#4f9d6e', '#b0554a', '#34506e', '#86898f', '#e0c384', '#7ba98f', '#5b6472'];
 
-Chart.defaults.color = '#a89a83';
-Chart.defaults.borderColor = '#3a2f22';
+Chart.defaults.color = '#86898f';
+Chart.defaults.borderColor = '#262a30';
 Chart.defaults.font.family = "'Inter', sans-serif";
 
 let expensePieChart = null;
@@ -39,7 +42,7 @@ export function renderCharts() {
             type: 'pie',
             data: {
                 labels: Object.keys(expenseData),
-                datasets: [{ data: Object.values(expenseData), backgroundColor: PALETTE, borderColor: '#14100d', borderWidth: 2 }]
+                datasets: [{ data: Object.values(expenseData), backgroundColor: PALETTE, borderColor: '#0a0b0d', borderWidth: 2 }]
             },
             options: {
                 responsive: true,
@@ -55,13 +58,13 @@ export function renderCharts() {
             type: 'bar',
             data: {
                 labels: Object.keys(incomeData),
-                datasets: [{ label: state.settings.currency, data: Object.values(incomeData), backgroundColor: '#3bb54a', borderRadius: 4 }]
+                datasets: [{ label: state.settings.currency, data: Object.values(incomeData), backgroundColor: '#4f9d6e', borderRadius: 4 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true, grid: { color: '#3a2f22' } },
+                    y: { beginAtZero: true, grid: { color: '#262a30' } },
                     x: { grid: { display: false } }
                 },
                 plugins: { legend: { display: false }, tooltip: moneyTooltip() }
