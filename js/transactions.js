@@ -1,5 +1,6 @@
 import { state, findWallet, findCategory, WALLET_LABELS } from './state.js';
 import { insertTransaction, updateTransaction, deleteTransaction as dbDeleteTransaction } from './db.js';
+import { getWalletBalance } from './wallets.js';
 import { formatCurrency, formatDate, todayLocalISODate } from './format.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
@@ -64,7 +65,7 @@ function applyPrefill(base) {
     return t;
 }
 
-function validateTransaction(t) {
+function validateTransaction(t, excludeId = null) {
     const errors = {};
     if (isNaN(t.amount) || t.amount <= 0) errors.amount = 'Muss größer als 0 sein.';
     if (!t.date) errors.date = 'Bitte ein Datum wählen.';
@@ -75,6 +76,16 @@ function validateTransaction(t) {
     } else {
         if (!t.wallet_id) errors.wallet = 'Wallet fehlt.';
         if (!t.category_id) errors.category = 'Kategorie fehlt.';
+    }
+
+    // Die Wallets bilden echtes Geld ab — kein Wallet darf durch eine Ausgabe
+    // oder einen Transfer ins Minus rutschen, das wäre real gar nicht möglich.
+    if (!errors.amount && t.wallet_id && (t.type === 'expense' || t.type === 'transfer')) {
+        const available = getWalletBalance(t.wallet_id, excludeId);
+        if (t.amount > available) {
+            const walletName = findWallet(t.wallet_id)?.name || 'diesem Wallet';
+            errors.amount = `Nicht genug auf ${walletName} (verfügbar: ${formatCurrency(available, state.settings.currency)}).`;
+        }
     }
     return errors;
 }
@@ -205,7 +216,7 @@ export function renderTransactionForm() {
         candidate.work_hours = !isNaN(workHours) ? workHours : null;
         candidate.work_rate = !isNaN(workRate) ? workRate : null;
 
-        const errors = validateTransaction(candidate);
+        const errors = validateTransaction(candidate, editingTransactionId);
         applyFieldErrors(form, errors);
         if (Object.keys(errors).length > 0) return;
 

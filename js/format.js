@@ -1,3 +1,13 @@
+// Nutzereingaben (KI-Fragen) und KI-Antworten landen über innerHTML im DOM
+// (js/ai.js) — ohne Escaping könnte "<img src=x onerror=...>" als eigene
+// Frage im Chatverlauf ausgeführt werden. Reines Text-Escaping reicht, da der
+// KI-Chat kein eigenes Markup rendern soll.
+export function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 export function formatCurrency(amount, currency) {
     try {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount);

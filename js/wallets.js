@@ -4,10 +4,14 @@
 
 import { state } from './state.js';
 
-export function getWalletBalance(walletId) {
+// excludeTransactionId lässt eine Transaktion aus der Summe raus — gebraucht,
+// um beim Bearbeiten einer bestehenden Transaktion zu prüfen, ob der NEUE
+// Betrag ginge, ohne dass die alte Version sich selbst mit-blockiert.
+export function getWalletBalance(walletId, excludeTransactionId = null) {
     const wallet = state.wallets.find(w => w.id === walletId);
     const opening = wallet ? (wallet.opening_balance || 0) : 0;
     return state.transactions.reduce((balance, t) => {
+        if (t.id === excludeTransactionId) return balance;
         if (t.type === 'income' && t.wallet_id === walletId) return balance + t.amount;
         if (t.type === 'expense' && t.wallet_id === walletId) return balance - t.amount;
         if (t.type === 'transfer') {

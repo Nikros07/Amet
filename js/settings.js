@@ -107,7 +107,7 @@ function renderWalletBalances() {
     container.innerHTML = state.wallets.map(w => `
         <div class="wallet-balance-row" data-id="${w.id}">
             <label for="opening-${w.id}">${WALLET_LABELS[w.key] || w.name}</label>
-            <input type="number" id="opening-${w.id}" step="0.01" value="${w.opening_balance ?? 0}">
+            <input type="number" id="opening-${w.id}" step="0.01" min="0" value="${w.opening_balance ?? 0}">
             <button type="button" class="saveWalletBalanceBtn" data-id="${w.id}">Speichern</button>
         </div>
     `).join('');
@@ -117,8 +117,8 @@ function renderWalletBalances() {
             const id = btn.dataset.id;
             const input = document.getElementById(`opening-${id}`);
             const value = parseFloat(input.value);
-            if (isNaN(value)) {
-                showToast('Ungültiger Betrag.', { type: 'error' });
+            if (isNaN(value) || value < 0) {
+                showToast('Ungültiger Betrag — Wallets können nicht negativ starten.', { type: 'error' });
                 return;
             }
             btn.disabled = true;

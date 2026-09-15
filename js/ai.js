@@ -6,7 +6,7 @@
 import { supabase } from './supabase-client.js';
 import { state, findCategory } from './state.js';
 import { getTotalWealth, getDirectlyAvailableStatus, getAllWalletBalances } from './wallets.js';
-import { formatCurrency, parseLocalDate, parseLocaleNumber } from './format.js';
+import { formatCurrency, parseLocalDate, parseLocaleNumber, escapeHtml } from './format.js';
 
 const QUICK_ACTIONS = [
     'Wie steh ich?',
@@ -153,6 +153,6 @@ export function renderAiPanel() {
 function renderHistory() {
     const el = document.getElementById('aiHistory');
     if (!el) return;
-    el.innerHTML = history.map(m => `<div class="ai-message ${m.role}">${m.text}</div>`).join('');
+    el.innerHTML = history.map(m => `<div class="ai-message ${m.role}">${escapeHtml(m.text)}</div>`).join('');
     el.scrollTop = el.scrollHeight;
 }
