@@ -43,36 +43,61 @@ function getModelChain(): string[] {
     return [primary, ...fallbacks];
 }
 
+// Ob ein fehlgeschlagener Versuch es wert ist, das nächste Modell in der
+// Fallback-Kette zu probieren. Timeouts, 429 (Rate-Limit) und 5xx sind
+// typischerweise vorübergehend/modellspezifisch — ein anderes Modell (oder
+// derselbe Provider gleich nochmal) kann funktionieren. Ein 4xx wie 400
+// (kaputter Request) oder 401/403 (Auth-Problem mit dem API-Key) betrifft
+// dagegen JEDEN Modellversuch gleichermaßen — weiterprobieren verschwendet
+// nur Zeit und lässt die Fehlermeldung an den Nutzer fälschlich nach
+// "alle Modelle down" statt "Request/Key kaputt" aussehen.
+class OpenRouterError extends Error {
+    retryable: boolean;
+    constructor(message: string, retryable: boolean) {
+        super(message);
+        this.retryable = retryable;
+    }
+}
+
 async function callOpenRouter(model: string, question: string, summary: unknown, apiKey: string, timeoutMs = 15000) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            signal: controller.signal,
-            body: JSON.stringify({
-                model,
-                messages: [
-                    { role: 'system', content: SYSTEM_PROMPT },
-                    { role: 'user', content: `Finanzdaten (JSON, bereits berechnet):\n${JSON.stringify(summary)}\n\nFrage: ${question}` }
-                ],
-                temperature: 0.4,
-                max_tokens: 300
-            })
-        });
+        let res: Response;
+        try {
+            res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                signal: controller.signal,
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user', content: `Finanzdaten (JSON, bereits berechnet):\n${JSON.stringify(summary)}\n\nFrage: ${question}` }
+                    ],
+                    temperature: 0.4,
+                    max_tokens: 300
+                })
+            });
+        } catch (err) {
+            // Timeout (AbortError) oder Netzwerkfehler — beides vorübergehend.
+            const message = err instanceof Error ? err.message : String(err);
+            throw new OpenRouterError(`Netzwerkfehler/Timeout: ${message}`, true);
+        }
 
         if (!res.ok) {
-            throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
+            const body = await res.text();
+            const retryable = res.status === 429 || res.status >= 500;
+            throw new OpenRouterError(`OpenRouter ${res.status}: ${body}`, retryable);
         }
 
         const json = await res.json();
         const answer = json.choices?.[0]?.message?.content;
-        if (!answer) throw new Error('Leere Antwort vom Modell');
+        if (!answer) throw new OpenRouterError('Leere Antwort vom Modell', true);
         return answer;
     } finally {
         clearTimeout(timeout);
@@ -124,6 +149,10 @@ Deno.serve(async (req: Request) => {
             });
         } catch (err) {
             errors.push(`${model}: ${err instanceof Error ? err.message : String(err)}`);
+            // Ein nicht-retrybarer Fehler (z.B. 400 kaputter Request, 401/403
+            // Auth) betrifft jedes weitere Modell identisch — sofort abbrechen
+            // statt die ganze Fallback-Kette sinnlos durchzuprobieren.
+            if (err instanceof OpenRouterError && !err.retryable) break;
         }
     }
 
