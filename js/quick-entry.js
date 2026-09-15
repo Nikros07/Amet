@@ -3,6 +3,7 @@
 // normale, bereits vorhandene Transaktionsformular nach Bestätigung durch den Nutzer.
 
 import { state } from './state.js';
+import { parseLocaleNumber } from './format.js';
 
 const WALLET_ALIASES = {
     account: ['konto', 'account', 'bank'],
@@ -34,20 +35,21 @@ export function parseQuickEntry(raw) {
     const input = raw.trim();
     if (!input) return null;
 
-    const transferMatch = input.match(/^(\d+(?:[.,]\d+)?)\s*€?\s*(\S+)\s+(?:zu|nach|an|->|→)\s+(\S+)$/i);
+    const transferMatch = input.match(/^(\d+(?:[.,]\d+)*)\s*€?\s*(\S+)\s+(?:zu|nach|an|->|→)\s+(\S+)$/i);
     if (transferMatch) {
-        const amount = parseFloat(transferMatch[1].replace(',', '.'));
+        const amount = parseLocaleNumber(transferMatch[1]);
         const fromKey = resolveWalletAlias(transferMatch[2]);
         const toKey = resolveWalletAlias(transferMatch[3]);
-        if (fromKey && toKey && fromKey !== toKey) {
+        if (fromKey && toKey && fromKey !== toKey && amount > 0) {
             return { type: 'transfer', amount, fromWalletKey: fromKey, toWalletKey: toKey };
         }
     }
 
-    const moveMatch = input.match(/^([+-])\s*(\d+(?:[.,]\d+)?)\s*(\S+)(?:\s+(.*))?$/);
+    const moveMatch = input.match(/^([+-])\s*(\d+(?:[.,]\d+)*)\s*(\S+)(?:\s+(.*))?$/);
     if (moveMatch) {
         const type = moveMatch[1] === '+' ? 'income' : 'expense';
-        const amount = parseFloat(moveMatch[2].replace(',', '.'));
+        const amount = parseLocaleNumber(moveMatch[2]);
+        if (!(amount > 0)) return null;
         const categoryToken = moveMatch[3];
         const category = findCategoryByName(type, categoryToken);
         return {
