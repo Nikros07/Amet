@@ -13,8 +13,12 @@
 //   supabase functions deploy ai-advisor
 //   supabase secrets set OPENROUTER_API_KEY=sk-or-...
 // Optional (sonst greifen die Defaults unten):
-//   supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-haiku-4.5
-//   supabase secrets set AI_MODEL_FALLBACK=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct
+//   supabase secrets set AI_MODEL_PRIMARY=openrouter/free
+//   supabase secrets set AI_MODEL_FALLBACK=google/gemma-4-31b-it:free,qwen/qwen3.8-27b:free
+//
+// Bewusst nur kostenlose Modelle (":free"-Suffix bzw. der "openrouter/free"-
+// Router, der zufällig unter den aktuell verfügbaren Gratis-Modellen wählt) —
+// diese App soll nie laufende Kosten verursachen.
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -35,8 +39,8 @@ Du bist kein professioneller Finanz- oder Anlageberater — es geht um einen per
 Antworte auf Deutsch, in der "du"-Form.`;
 
 function getModelChain(): string[] {
-    const primary = Deno.env.get('AI_MODEL_PRIMARY') || 'anthropic/claude-haiku-4.5';
-    const fallbacks = (Deno.env.get('AI_MODEL_FALLBACK') || 'openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct')
+    const primary = Deno.env.get('AI_MODEL_PRIMARY') || 'openrouter/free';
+    const fallbacks = (Deno.env.get('AI_MODEL_FALLBACK') || 'google/gemma-4-31b-it:free,qwen/qwen3.8-27b:free')
         .split(',')
         .map(m => m.trim())
         .filter(Boolean);

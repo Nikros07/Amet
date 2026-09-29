@@ -91,11 +91,11 @@ supabase functions deploy ai-advisor
 supabase secrets set OPENROUTER_API_KEY=sk-or-dein-key
 ```
 
-Optional, um die Modelle zu ändern (sonst greifen sinnvolle Defaults):
+Standardmäßig werden bewusst nur **kostenlose** OpenRouter-Modelle genutzt (`openrouter/free` als Router über die jeweils verfügbaren Gratis-Modelle, mit zwei konkreten Gratis-Modellen als Fallback) — die App soll nie laufende Kosten verursachen. Optional, um andere Modelle zu nutzen:
 
 ```bash
-supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-haiku-4.5
-supabase secrets set AI_MODEL_FALLBACK=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct
+supabase secrets set AI_MODEL_PRIMARY=openrouter/free
+supabase secrets set AI_MODEL_FALLBACK=google/gemma-4-31b-it:free,qwen/qwen3.8-27b:free
 ```
 
 Fällt das primäre Modell aus (Fehler, Timeout, Rate Limit, ungültige Antwort), probiert die Funktion automatisch die Fallback-Modelle der Reihe nach durch.
