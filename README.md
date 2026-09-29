@@ -94,7 +94,7 @@ supabase secrets set OPENROUTER_API_KEY=sk-or-dein-key
 Optional, um die Modelle zu ändern (sonst greifen sinnvolle Defaults):
 
 ```bash
-supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-3.5-haiku
+supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-haiku-4.5
 supabase secrets set AI_MODEL_FALLBACK=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct
 ```
 

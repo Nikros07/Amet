@@ -13,7 +13,7 @@
 //   supabase functions deploy ai-advisor
 //   supabase secrets set OPENROUTER_API_KEY=sk-or-...
 // Optional (sonst greifen die Defaults unten):
-//   supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-3.5-haiku
+//   supabase secrets set AI_MODEL_PRIMARY=anthropic/claude-haiku-4.5
 //   supabase secrets set AI_MODEL_FALLBACK=openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct
 
 const CORS_HEADERS = {
@@ -35,7 +35,7 @@ Du bist kein professioneller Finanz- oder Anlageberater — es geht um einen per
 Antworte auf Deutsch, in der "du"-Form.`;
 
 function getModelChain(): string[] {
-    const primary = Deno.env.get('AI_MODEL_PRIMARY') || 'anthropic/claude-3.5-haiku';
+    const primary = Deno.env.get('AI_MODEL_PRIMARY') || 'anthropic/claude-haiku-4.5';
     const fallbacks = (Deno.env.get('AI_MODEL_FALLBACK') || 'openai/gpt-4o-mini,meta-llama/llama-3.1-8b-instruct')
         .split(',')
         .map(m => m.trim())
