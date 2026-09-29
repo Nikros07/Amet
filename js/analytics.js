@@ -11,7 +11,11 @@ function monthKey(dateStr) {
 
 function computeNetWorthByDay() {
     const sorted = [...state.transactions].sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date));
-    let total = 0;
+    // Muss beim Anfangssaldo der Wallets starten, nicht bei 0 — sonst zeigt der
+    // Chart nicht das echte Gesamtvermögen, sondern nur die Summe der seit dem
+    // Tracking-Start erfassten Transaktionen (siehe js/wallets.js: getTotalWealth
+    // rechnet den Anfangssaldo genauso mit ein).
+    let total = state.wallets.reduce((sum, w) => sum + (w.opening_balance || 0), 0);
     const byDay = new Map();
     for (const t of sorted) {
         if (t.type === 'income') total += t.amount;
