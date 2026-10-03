@@ -5,7 +5,7 @@
 
 import { supabase } from './supabase-client.js';
 import { state, findCategory } from './state.js';
-import { getTotalWealth, getDirectlyAvailableStatus, getAllWalletBalances } from './wallets.js';
+import { getTotalWealth, getDirectlyAvailableStatus, getAllWalletBalances, getGoalProgress } from './wallets.js';
 import { formatCurrency, parseLocalDate, parseLocaleNumber, escapeHtml } from './format.js';
 
 const QUICK_ACTIONS = [
@@ -54,7 +54,7 @@ export function computeFinancialSummary() {
         thisWeek: periodTotals(7),
         thisMonth: periodTotals(30),
         topExpenseCategoriesThisMonth: topExpenseCategories(30),
-        goals: state.goals.map(g => ({ name: g.name, target: g.target_amount, current: g.current_amount })),
+        goals: state.goals.map(g => ({ name: g.name, target: g.target_amount, current: getGoalProgress(g) })),
         budgets: state.budgets.map(b => ({
             category: findCategory(b.category_id)?.name || 'Sonstiges',
             limit: b.limit_amount

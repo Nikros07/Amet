@@ -1,6 +1,7 @@
 import { state } from './state.js';
-import { insertGoal, updateGoal, deleteGoal } from './db.js';
-import { formatCurrency } from './format.js';
+import { insertGoal, insertTransaction, deleteGoal } from './db.js';
+import { getWalletBalance, getGoalProgress } from './wallets.js';
+import { formatCurrency, todayLocalISODate } from './format.js';
 import { confirmDialog } from './modal.js';
 import { showToast } from './toast.js';
 
@@ -52,28 +53,40 @@ export function renderGoals() {
         return;
     }
 
+    const walletOptions = state.wallets
+        .map(w => `<option value="${w.id}" data-key="${w.key}">${w.name} (${formatCurrency(getWalletBalance(w.id), cur)})</option>`)
+        .join('');
+
     container.innerHTML = state.goals.map(g => {
-        const pct = Math.min(100, Math.round((g.current_amount / g.target_amount) * 100));
+        const progress = getGoalProgress(g);
+        const pct = Math.min(100, Math.round((progress / g.target_amount) * 100));
         return `
             <div class="goal-card" data-id="${g.id}">
                 <h4>${g.name} <button type="button" class="deleteGoalBtn" data-id="${g.id}" aria-label="Löschen">×</button></h4>
                 <div class="progress-bar"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
                 <div class="progress-label">
-                    <span>${formatCurrency(g.current_amount, cur)} / ${formatCurrency(g.target_amount, cur)}</span>
+                    <span>${formatCurrency(progress, cur)} / ${formatCurrency(g.target_amount, cur)}</span>
                     <span>${pct}%</span>
                 </div>
-                <div class="goal-add-row" style="margin: 10px 0 0;">
-                    <input type="number" class="goalContribution" data-id="${g.id}" placeholder="Beitrag" min="0.01" step="0.01" style="flex:1;">
+                <div class="goal-add-row goal-contribution-row">
+                    <select class="goalWallet" data-id="${g.id}" aria-label="Von Wallet">${walletOptions}</select>
+                    <input type="number" class="goalContribution" data-id="${g.id}" placeholder="Beitrag" min="0.01" step="0.01">
                     <button type="button" class="addContributionBtn" data-id="${g.id}">+ Hinzufügen</button>
                 </div>
             </div>
         `;
     }).join('');
 
+    // Standardmäßig vom Konto abbuchen (Hauptquelle von "Direkt verfügbar").
+    container.querySelectorAll('.goalWallet').forEach(select => {
+        const account = select.querySelector('option[data-key="account"]');
+        if (account) select.value = account.value;
+    });
+
     container.querySelectorAll('.deleteGoalBtn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.dataset.id;
-            const ok = await confirmDialog('Dieses Sparziel wirklich löschen?');
+            const ok = await confirmDialog('Dieses Sparziel wirklich löschen? Bereits eingezahlte Beträge gehen zurück auf die Wallets, von denen sie kamen.');
             if (!ok) return;
             try {
                 await deleteGoal(id);
@@ -88,25 +101,40 @@ export function renderGoals() {
         btn.addEventListener('click', async (e) => {
             const id = e.currentTarget.dataset.id;
             const input = container.querySelector(`.goalContribution[data-id="${id}"]`);
+            const select = container.querySelector(`.goalWallet[data-id="${id}"]`);
             const amount = parseFloat(input.value);
             if (isNaN(amount) || amount <= 0) {
                 showToast('Bitte einen gültigen Betrag eingeben.', { type: 'error' });
                 return;
             }
-            // Zwei schnelle Klicks würden sonst beide vom selben (noch nicht
-            // aktualisierten) current_amount ausgehen — der zweite Request
-            // überschreibt den ersten, statt beide Beiträge zu addieren, und
-            // ein Beitrag geht wortlos verloren. Button während des Requests
-            // sperren, damit onChange() zuerst den frischen Stand nachlädt.
+            // Wie bei Ausgaben/Transfers: kein Wallet darf ins Minus rutschen.
+            const available = getWalletBalance(select.value);
+            if (amount > available) {
+                const walletName = select.selectedOptions[0].textContent.replace(/\s*\(.*\)$/, '');
+                showToast(`Nicht genug auf ${walletName} (verfügbar: ${formatCurrency(available, cur)}).`, { type: 'error' });
+                return;
+            }
+            // Sperren, damit ein Doppelklick nicht zwei Buchungen auslöst,
+            // bevor der Saldo-Check oben den neuen Stand sehen konnte.
             const target = e.currentTarget;
             target.disabled = true;
             input.disabled = true;
-            const goal = state.goals.find(g => g.id === id);
+            select.disabled = true;
             try {
-                await updateGoal(id, { current_amount: goal.current_amount + amount });
-                showToast('Beitrag gespeichert.', { type: 'success' });
+                await insertTransaction({
+                    type: 'goal',
+                    amount,
+                    date: todayLocalISODate(),
+                    wallet_id: select.value,
+                    to_wallet_id: null,
+                    category_id: null,
+                    goal_id: id,
+                    note: null
+                });
+                showToast('Beitrag gebucht.', { type: 'success' });
                 onChange();
             } catch (err) {
+                select.disabled = false;
                 showToast(`Speichern fehlgeschlagen: ${err.message || err}`, { type: 'error' });
                 target.disabled = false;
                 input.disabled = false;

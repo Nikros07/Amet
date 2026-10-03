@@ -72,10 +72,15 @@ export function renderDashboard() {
     const directStatus = getDirectlyAvailableStatus();
 
     const recent = state.transactions.slice(0, 5).map(t => {
-        const label = t.type === 'transfer'
-            ? `${findWallet(t.wallet_id)?.name || '?'} → ${findWallet(t.to_wallet_id)?.name || '?'}`
-            : findCategory(t.category_id)?.name || 'Sonstiges';
-        const sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
+        let label;
+        if (t.type === 'transfer') {
+            label = `${findWallet(t.wallet_id)?.name || '?'} → ${findWallet(t.to_wallet_id)?.name || '?'}`;
+        } else if (t.type === 'goal') {
+            label = `Sparziel: ${state.goals.find(g => g.id === t.goal_id)?.name || '?'}`;
+        } else {
+            label = findCategory(t.category_id)?.name || 'Sonstiges';
+        }
+        const sign = t.type === 'income' ? '+' : (t.type === 'expense' || t.type === 'goal') ? '−' : '';
         return `
             <li class="recent-item">
                 <span class="recent-label">${label}</span>

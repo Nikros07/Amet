@@ -14,6 +14,7 @@ export function getWalletBalance(walletId, excludeTransactionId = null) {
         if (t.id === excludeTransactionId) return balance;
         if (t.type === 'income' && t.wallet_id === walletId) return balance + t.amount;
         if (t.type === 'expense' && t.wallet_id === walletId) return balance - t.amount;
+        if (t.type === 'goal' && t.wallet_id === walletId) return balance - t.amount;
         if (t.type === 'transfer') {
             if (t.wallet_id === walletId) return balance - t.amount;
             if (t.to_wallet_id === walletId) return balance + t.amount;
@@ -30,8 +31,26 @@ export function getWalletByKey(key) {
     return state.wallets.find(w => w.key === key);
 }
 
+// Geld in Sparzielen ist nicht mehr auf den Wallets, gehört aber weiterhin dir —
+// der Beitrag ist wie ein Transfer in einen eigenen Topf und ändert das
+// Gesamtvermögen nicht.
+export function getGoalContributionsTotal() {
+    return state.transactions
+        .filter(t => t.type === 'goal')
+        .reduce((sum, t) => sum + t.amount, 0);
+}
+
 export function getTotalWealth() {
-    return state.wallets.reduce((sum, w) => sum + getWalletBalance(w.id), 0);
+    return state.wallets.reduce((sum, w) => sum + getWalletBalance(w.id), 0) + getGoalContributionsTotal();
+}
+
+// current_amount ist der (alte, manuell gepflegte) Startwert; Beiträge kommen
+// aus der Transaktionshistorie.
+export function getGoalProgress(goal) {
+    const contributed = state.transactions
+        .filter(t => t.type === 'goal' && t.goal_id === goal.id)
+        .reduce((sum, t) => sum + t.amount, 0);
+    return (goal.current_amount || 0) + contributed;
 }
 
 export function getDirectlyAvailable() {

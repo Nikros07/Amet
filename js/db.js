@@ -199,23 +199,14 @@ export async function insertGoal(payload) {
     return data;
 }
 
-export async function updateGoal(id, payload) {
-    const { data, error } = await supabase
-        .from('goals')
-        .update(payload)
-        .eq('id', id)
-        .select()
-        .single();
-    if (error) throw error;
-    const index = state.goals.findIndex(g => g.id === id);
-    if (index !== -1) state.goals[index] = data;
-    return data;
-}
-
+// Die DB löscht die Beitrags-Buchungen des Ziels per CASCADE mit — hier den
+// lokalen State genauso nachziehen, damit das Geld sofort wieder auf den
+// Wallets erscheint.
 export async function deleteGoal(id) {
     const { error } = await supabase.from('goals').delete().eq('id', id);
     if (error) throw error;
     state.goals = state.goals.filter(g => g.id !== id);
+    state.transactions = state.transactions.filter(t => t.goal_id !== id);
 }
 
 // ---------- Budgets ----------

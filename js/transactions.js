@@ -255,8 +255,12 @@ function describeTransaction(t) {
         const to = findWallet(t.to_wallet_id);
         return `${from?.name || '?'} → ${to?.name || '?'}`;
     }
-    const category = findCategory(t.category_id);
     const wallet = findWallet(t.wallet_id);
+    if (t.type === 'goal') {
+        const goal = state.goals.find(g => g.id === t.goal_id);
+        return `${goal?.name || '?'} · ${wallet?.name || '?'}`;
+    }
+    const category = findCategory(t.category_id);
     return `${category?.name || 'Sonstiges'} · ${wallet?.name || '?'}`;
 }
 
@@ -268,7 +272,7 @@ function matchesFilters(t) {
     return matchesSearch && matchesType;
 }
 
-const TYPE_LABEL = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer' };
+const TYPE_LABEL = { income: 'Einnahme', expense: 'Ausgabe', transfer: 'Transfer', goal: 'Sparziel' };
 
 export function renderTransactionList() {
     const container = document.getElementById('transactionsContainer');
@@ -289,7 +293,7 @@ export function renderTransactionList() {
                 <td>${describeTransaction(t)}${t.note ? ` <span class="note-text">— ${t.note}</span>` : ''}</td>
                 <td>${formatCurrency(t.amount, cur)}</td>
                 <td>
-                    <button class="editBtn" data-id="${t.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>
+                    ${t.type === 'goal' ? '' : `<button class="editBtn" data-id="${t.id}" title="Bearbeiten" aria-label="Bearbeiten">✎</button>`}
                     <button class="deleteBtn" data-id="${t.id}" title="Löschen" aria-label="Löschen">🗑</button>
                 </td>
             </tr>

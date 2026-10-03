@@ -12,7 +12,7 @@ Kein Bank-Zugriff, kein Open Banking, keine automatische Synchronisierung — al
 
 1. Projekt auf [supabase.com](https://supabase.com) anlegen (kostenlos).
 2. Im SQL-Editor den kompletten Inhalt von [`supabase/schema.sql`](supabase/schema.sql) ausführen — legt Tabellen, Constraints und Row-Level-Security an.
-2b. Danach der Reihe nach alle Dateien aus [`supabase/migrations/`](supabase/migrations/) ausführen (aktuell `002_ownership_checks.sql` bis `005_merge_cash_wallets.sql`) — ergänzen Ownership-Checks, Krypto/Geldbeutel als Wallets, den Anfangssaldo pro Wallet und legen "Bargeld"/"Cash-Reserve zuhause" wieder mit Geldbeutel zusammen. Bei künftigen Updates hier einfach neue Dateien in Reihenfolge nachziehen.
+2b. Danach der Reihe nach alle Dateien aus [`supabase/migrations/`](supabase/migrations/) ausführen (aktuell `002_ownership_checks.sql` bis `006_goal_contributions.sql`) — ergänzen Ownership-Checks, Krypto/Geldbeutel als Wallets, den Anfangssaldo pro Wallet und legen "Bargeld"/"Cash-Reserve zuhause" wieder mit Geldbeutel zusammen. Bei künftigen Updates hier einfach neue Dateien in Reihenfolge nachziehen.
 3. Unter **Authentication → Providers** sicherstellen, dass "Email" aktiv ist, **Signups aber nicht öffentlich** sind (die App hat bewusst keinen Registrieren-Button).
 4. Unter **Authentication → Users → Add user** deinen einen Account anlegen (E-Mail + Passwort, "Auto Confirm User" aktivieren).
 5. Unter **Project Settings → API** die **Project URL** und den **anon public key** kopieren.
@@ -67,13 +67,19 @@ Statt eines vollen Formulars kannst du oben im Dashboard kurze Ausdrücke eintip
 
 Das Ergebnis wird **nicht sofort gespeichert** — es füllt das normale Formular vor, du prüfst/korrigierst und bestätigst explizit.
 
+## Freunde-Accounts
+
+Jeder Freund bekommt einen **eigenen Account mit eigenen, privaten Daten** — kein gemeinsames Login. Die Trennung erzwingt Row-Level-Security (`user_id = auth.uid()` auf allen Tabellen); Wallets, Kategorien und Einstellungen legt die App beim ersten Login automatisch pro Nutzer an. Die kostenlose KI-Function wird von allen gemeinsam genutzt (nur eingeloggte Nutzer können sie aufrufen).
+
+Es gibt bewusst keinen offenen Signup. Neuen Account anlegen: Supabase-Dashboard → **Authentication → Users → Add user** → E-Mail + Passwort, **Auto Confirm User** aktivieren, Zugangsdaten an den Freund geben. Hinweis: Als Projektinhaber siehst du im Supabase-Dashboard technisch auch deren Daten — das gehört zur Vertrauensfrage dazu.
+
 ## Navigation
 
 Fünf Bereiche oben: **Dashboard** (Zahlen, Schnelleingabe, letzte Transaktionen), **Transactions** (Formular + Liste + Suche/Filter), **Analytics** (Vermögensverlauf, Income vs Expenses, Kategorien-Charts, Ausgabenbericht, Forecast), **Goals** (Sparziele + Budgets), **AI** (Assistent). **Settings** ist bewusst separat.
 
 ## Sparziele & Budgets
 
-- **Sparziele**: Name + Zielbetrag anlegen, Fortschritt manuell per Beitrag erhöhen (kein automatisches Verknüpfen mit Transaktionen in dieser Version).
+- **Sparziele**: Name + Zielbetrag anlegen. Ein Beitrag wird als Buchung (Typ `goal`) vom gewählten Wallet abgezogen — "Direkt verfügbar" sinkt entsprechend, das Gesamtvermögen bleibt gleich (wie ein Transfer in einen eigenen Topf). Beiträge sind in der Transaktionsliste sichtbar und löschbar; wird ein Sparziel gelöscht, geht das eingezahlte Geld automatisch zurück auf die Wallets.
 - **Budgets**: Monatslimit pro Ausgaben-Kategorie, Fortschrittsbalken zeigt Ist-Ausgaben des laufenden Monats gegen das Limit.
 
 ## KI-Assistent (AMET AI)

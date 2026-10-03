@@ -322,6 +322,7 @@ button:disabled,
 
 .transaction-type-income { color: var(--green); font-weight: 600; }
 .transaction-type-expense { color: var(--red); font-weight: 600; }
+.transaction-type-goal { color: var(--gold); font-weight: 600; }
 .transaction-type-transfer { color: var(--navy); font-weight: 600; background: rgba(52,80,110,0.25); padding: 2px 6px; border-radius: 3px; }
 
 .transaction-date {
@@ -648,6 +649,7 @@ button:disabled,
 .recent-date { color: var(--text-muted); font-size: 0.85em; }
 .recent-amount.recent-income { color: var(--green); font-weight: 600; font-variant-numeric: tabular-nums; }
 .recent-amount.recent-expense { color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
+.recent-amount.recent-goal { color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
 .recent-amount.recent-transfer { color: var(--navy); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ---------- Goals & Budgets ---------- */
@@ -743,6 +745,10 @@ button:disabled,
     color: var(--text-primary);
     font-family: inherit;
 }
+
+.goal-add-row.goal-contribution-row { margin: 10px 0 0; }
+.goal-contribution-row input { flex: 1; min-width: 90px; }
+.goal-contribution-row select { max-width: 100%; }
 
 /* Per-goal contribution button — previously unstyled (default browser
    button), which stood out against the app's consistently themed controls. */
